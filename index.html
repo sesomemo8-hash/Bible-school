@@ -1,0 +1,3102 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1e40af" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="مدرسة الكتاب المقدس" />
+  <meta name="application-name" content="مدرسة الكتاب المقدس" />
+  <title>مدرسة الكتاب المقدس — خدمة مدارس الأحد لمرحلة ابتدائي</title>
+
+  <!-- خط عربي واضح ومبهج يناسب أطفال ابتدائي -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    * {
+      font-family: 'Cairo', sans-serif;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      background: linear-gradient(135deg, #f0f9ff 0%, #fefce8 50%, #fdf2f8 100%);
+      color: #1e293b;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .shadow-kid {
+      box-shadow: 0 12px 30px -8px rgba(30, 64, 175, 0.14), 0 4px 12px -2px rgba(245, 158, 11, 0.1);
+    }
+    .shadow-card {
+      box-shadow: 0 6px 20px -4px rgba(15, 23, 42, 0.07);
+    }
+    .btn-kid {
+      transition: transform 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+    }
+    .btn-kid:active {
+      transform: scale(0.97);
+    }
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
+    }
+    .animate-float {
+      animation: floatSlow 3.5s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-amber-200 selection:text-blue-950">
+  <div id="app"></div>
+
+  <!-- حاوية الإشعارات الفورية والتنبيهات المنبثقة -->
+  <div id="toast-container" class="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:w-96 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <script>
+    // =========================================================================
+    // 1. إعدادات PWA وتوليد Manifest و Service Worker تلقائياً داخل نفس الملف
+    // =========================================================================
+    const ATTACHED_COVER_LOGO = '1000520458.jpg';
+
+    const DEFAULT_LOGO_SVG = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" class="w-full h-full">
+        <defs>
+          <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#fde68a"/>
+            <stop offset="45%" stop-color="#d97706"/>
+            <stop offset="100%" stop-color="#92400e"/>
+          </linearGradient>
+        </defs>
+        <circle cx="120" cy="120" r="112" fill="#ffffff" stroke="url(#goldGrad)" stroke-width="8"/>
+        <circle cx="120" cy="120" r="98" fill="none" stroke="#fbbf24" stroke-width="2" stroke-dasharray="6 4"/>
+        <rect x="111" y="34" width="18" height="92" rx="4" fill="url(#goldGrad)"/>
+        <rect x="84" y="58" width="72" height="18" rx="4" fill="url(#goldGrad)"/>
+        <path d="M52 142 Q86 128 120 142 Q154 128 188 142 L184 176 Q152 162 120 176 Q88 162 56 176 Z" fill="#fef3c7" stroke="#b45309" stroke-width="3"/>
+        <line x1="120" y1="142" x2="120" y2="176" stroke="#b45309" stroke-width="3"/>
+        <rect x="46" y="182" width="148" height="26" rx="13" fill="url(#goldGrad)"/>
+        <text x="120" y="199" text-anchor="middle" fill="#ffffff" font-family="Cairo, sans-serif" font-weight="900" font-size="13">مدرسة الكتاب المقدس</text>
+      </svg>
+    `;
+
+    function getDefaultLogoDataUrl() {
+      return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(DEFAULT_LOGO_SVG.trim());
+    }
+
+    (function initPWA() {
+      try {
+        const manifest = {
+          name: 'مدرسة الكتاب المقدس',
+          short_name: 'مدرسة الكتاب المقدس',
+          description: 'خدمة مدارس الأحد لمرحلة ابتدائي - كنيسة الشهيد العظيم مارمينا العجائبي والبابا كيرلس السادس',
+          start_url: './',
+          display: 'standalone',
+          background_color: '#f0f9ff',
+          theme_color: '#1e40af',
+          dir: 'rtl',
+          lang: 'ar',
+          icons: [
+            {
+              src: getDefaultLogoDataUrl(),
+              sizes: '192x192 512x512',
+              type: 'image/svg+xml',
+              purpose: 'any',
+            },
+          ],
+        };
+        const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = URL.createObjectURL(blob);
+        document.head.appendChild(link);
+      } catch (e) {}
+    })();
+
+    // =========================================================================
+    // 2. البيانات الأساسية وقاعدة البيانات المنظمة للمنصة
+    // =========================================================================
+    const CLASSES = ['فصل ثالثة', 'فصل رابعة', 'فصل خامسة', 'فصل سادسة'];
+
+    const BIBLE_CHAPTERS = {
+      'إنجيل متى': {
+        5: [
+          '1 وَلَمَّا رَأَى الْجُمُوعَ صَعِدَ إِلَى الْجَبَلِ، فَلَمَّا جَلَسَ تَقَدَّمَ إِلَيْهِ تَلاَمِيذُهُ.',
+          '2 فَفَتَحَ فَاهُ وَعَلَّمَهُمْ قَائِلاً:',
+          '3 «طُوبَى لِلْمَسَاكِينِ بِالرُّوحِ، لأَنَّ لَهُمْ مَلَكُوتَ السَّمَاوَاتِ.',
+          '4 طُوبَى لِلْحَزَانَى، لأَنَّهُمْ يَتَعَزَّوْنَ.',
+          '5 طُوبَى لِلْوُدَعَاءِ، لأَنَّهُمْ يَرِثُونَ الأَرْضَ.',
+          '6 طُوبَى لِلْجِيَاعِ وَالْعِطَاشِ إِلَى الْبِرِّ، لأَنَّهُمْ يُشْبَعُونَ.',
+          '7 طُوبَى لِلرُّحَمَاءِ، لأَنَّهُمْ يُرْحَمُونَ.',
+          '8 طُوبَى لِلأَنْقِيَاءِ الْقَلْبِ، لأَنَّهُمْ يُعَايِنُونَ اللهَ.',
+          '9 طُوبَى لِصَانِعِي السَّلاَمِ، لأَنَّهُمْ أَبْنَاءَ اللهِ يُدْعَوْنَ.',
+          '14 أَنْتُمْ نُورُ الْعَالَمِ. لاَ يُمْكِنُ أَنْ تُخْفَى مَدِينَةٌ مَوْضُوعَةٌ عَلَى جَبَلٍ.',
+          '16 فَلْيُضِئْ نُورُكُمْ هكَذَا قُدَّامَ النَّاسِ، لِكَيْ يَرَوْا أَعْمَالَكُمُ الْحَسَنَةَ، وَيُمَجِّدُوا أَبَاكُمُ الَّذِي فِي السَّمَاوَاتِ.',
+        ],
+      },
+      'سفر المزامير': {
+        23: [
+          '1 الرَّبُّ رَاعِيَّ فَلاَ يُعْوِزُنِي شَيْءٌ.',
+          '2 فِي مَرَاعٍ خُضْرٍ يُرْبِضُنِي. إِلَى مِيَاهِ الرَّاحَةِ يُورِدُنِي.',
+          '3 يَرُدُّ نَفْسِي. يَهْدِينِي إِلَى سُبُلِ الْبِرِّ مِنْ أَجْلِ اسْمِهِ.',
+          '4 أَيْضًا إِذَا سِرْتُ فِي وَادِي ظِلِّ الْمَوْتِ لاَ أَخَافُ شَرًّا، لأَنَّكَ أَنْتَ مَعِي. عَصَاكَ وَعُكَّازُكَ هُمَا يُعَزِّيَانِنِي.',
+          '5 تُرَتِّبُ قُدَّامِي مَائِدَةً تُجَاهَ مُضَايِقِيَّ. مَسَحْتَ بِالدُّهْنِ رَأْسِي. كَأْسِي رَيَّا.',
+          '6 إِنَّمَا خَيْرٌ وَرَحْمَةٌ يَتْبَعَانِنِي كُلَّ أَيَّامِ حَيَاتِي، وَأَسْكُنُ فِي بَيْتِ الرَّبِّ إِلَى مَدَى الأَيَّامِ.',
+        ],
+      },
+      'إنجيل يوحنا': {
+        10: [
+          '11 «أَنَا هُوَ الرَّاعِي الصَّالِحُ، وَالرَّاعِي الصَّالِحُ يَبْذِلُ نَفْسَهُ عَنِ الْخِرَافِ.',
+          '14 أَمَّا أَنَا فَإِنِّي الرَّاعِي الصَّالِحُ، وَأَعْرِفُ خَاصَّتِي وَخَاصَّتِي تَعْرِفُنِي،',
+          '27 خِرَافِي تَسْمَعُ صَوْتِي، وَأَنَا أَعْرِفُهَا فَتَتْبَعُنِي.',
+          '28 وَأَنَا أُعْطِيهَا حَيَاةً أَبَدِيَّةً، وَلَنْ تَهْلِكَ إِلَى الأَبَدِ، وَلاَ يَخْطَفُهَا أَحَدٌ مِنْ يَدِي.',
+        ],
+        15: [
+          '1 «أَنَا الْكَرْمَةُ الْحَقِيقِيَّةُ وَأَبِي الْكَرَّامُ.',
+          '5 أَنَا الْكَرْمَةُ وَأَنْتُمُ الأَغْصَانُ. الَّذِي يَثْبُتُ فِيَّ وَأَنَا فِيهِ هذَا يَأْتِي بِثَمَرٍ كَثِيرٍ، لأَنَّكُمْ بِدُونِي لاَ تَقْدِرُونَ أَنْ تَفْعَلُوا شَيْئًا.',
+          '12 «هذِهِ هِيَ وَصِيَّتِي أَنْ تُحِبُّوا بَعْضُكُمْ بَعْضًا كَمَا أَحْبَبْتُكُمْ.',
+          '13 لَيْسَ لأَحَدٍ حُبٌّ أَعْظَمُ مِنْ هذَا: أَنْ يَضَعَ أَحَدٌ نَفْسَهُ لأَجْلِ أَحِبَّائِهِ.',
+        ],
+      },
+    };
+
+    const STORAGE_KEY = 'bible_school_primary_v3';
+
+    function makeAvatar(label, bg = '#dbeafe', fg = '#1e3a8a') {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="50" fill="${bg}"/><text x="50" y="60" text-anchor="middle" fill="${fg}" font-family="Cairo,sans-serif" font-weight="900" font-size="36">${label}</text></svg>`;
+      return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    }
+
+    const INITIAL_STATE = {
+      screen: 'cover', // 'cover' | 'auth' | 'app'
+      authTab: 'login', // 'login' | 'join'
+      currentUser: null,
+      activeNav: 'home', // 'home' | 'attendance' | 'readings' | 'quiz' | 'leaderboards' | 'resources' | 'admin'
+      selectedClass: 'فصل ثالثة',
+      customLogo: null,
+
+      // المستخدمون المعتمدون (أدمن، خدام، مخدومون)
+      users: [
+        {
+          id: 'adm-1',
+          role: 'admin',
+          fullName: 'أ. بيشوي سمير حنا (أمين الخدمة)',
+          phone: '01000000001',
+          parentPhone: '01000000001',
+          password: '123',
+          birthDate: '1990-05-12',
+          className: 'فصل ثالثة',
+          assignedClasses: [...CLASSES],
+          status: 'approved',
+          avatar: makeAvatar('أد', '#fef3c7', '#92400e'),
+          quickLoginEnabled: true,
+        },
+        {
+          id: 'srv-3',
+          role: 'servant',
+          fullName: 'خ. مريم أشرف فهيم',
+          phone: '01000000003',
+          parentPhone: '01000000003',
+          password: '123',
+          birthDate: '1998-08-20',
+          className: 'فصل ثالثة',
+          assignedClasses: ['فصل ثالثة'],
+          status: 'approved',
+          avatar: makeAvatar('خ3', '#dcfce7', '#166534'),
+          quickLoginEnabled: true,
+        },
+        {
+          id: 'srv-4',
+          role: 'servant',
+          fullName: 'خ. كيرلس مجدي عزيز',
+          phone: '01000000004',
+          parentPhone: '01000000004',
+          password: '123',
+          birthDate: '1997-03-14',
+          className: 'فصل رابعة',
+          assignedClasses: ['فصل رابعة'],
+          status: 'approved',
+          avatar: makeAvatar('خ4', '#e0e7ff', '#3730a3'),
+          quickLoginEnabled: true,
+        },
+        {
+          id: 'srv-5',
+          role: 'servant',
+          fullName: 'خ. مارينا عادل نصيف',
+          phone: '01000000005',
+          parentPhone: '01000000005',
+          password: '123',
+          birthDate: '1999-11-02',
+          className: 'فصل خامسة',
+          assignedClasses: ['فصل خامسة'],
+          status: 'approved',
+          avatar: makeAvatar('خ5', '#fce7f3', '#9d174d'),
+          quickLoginEnabled: true,
+        },
+        {
+          id: 'srv-6',
+          role: 'servant',
+          fullName: 'خ. فادي عماد شكري',
+          phone: '01000000006',
+          parentPhone: '01000000006',
+          password: '123',
+          birthDate: '1996-01-25',
+          className: 'فصل سادسة',
+          assignedClasses: ['فصل سادسة'],
+          status: 'approved',
+          avatar: makeAvatar('خ6', '#ffedd5', '#9a3412'),
+          quickLoginEnabled: true,
+        },
+        // مخدومون معتمدون
+        {
+          id: 'stu-3-1',
+          role: 'student',
+          fullName: 'يوسف مينا جرجس',
+          phone: '01211111101',
+          parentPhone: '01222222201',
+          password: '123',
+          birthDate: '2017-04-10',
+          className: 'فصل ثالثة',
+          status: 'approved',
+          avatar: makeAvatar('يو', '#dbeafe', '#1e40af'),
+          quickLoginEnabled: true,
+        },
+        {
+          id: 'stu-3-2',
+          role: 'student',
+          fullName: 'كاراس هاني نبيل',
+          phone: '01211111102',
+          parentPhone: '01222222202',
+          password: '123',
+          birthDate: '2017-07-18',
+          className: 'فصل ثالثة',
+          status: 'approved',
+          avatar: makeAvatar('كا', '#fef3c7', '#b45309'),
+          quickLoginEnabled: false,
+        },
+        {
+          id: 'stu-3-3',
+          role: 'student',
+          fullName: 'ميرنا سامح لبيب',
+          phone: '01211111103',
+          parentPhone: '01222222203',
+          password: '123',
+          birthDate: '2017-09-05',
+          className: 'فصل ثالثة',
+          status: 'approved',
+          avatar: makeAvatar('مي', '#fce7f3', '#be185d'),
+          quickLoginEnabled: false,
+        },
+        {
+          id: 'stu-4-1',
+          role: 'student',
+          fullName: 'أبانوب روماني فؤاد',
+          phone: '01211111104',
+          parentPhone: '01222222204',
+          password: '123',
+          birthDate: '2016-02-14',
+          className: 'فصل رابعة',
+          status: 'approved',
+          avatar: makeAvatar('أب', '#dcfce7', '#15803d'),
+          quickLoginEnabled: false,
+        },
+        {
+          id: 'stu-4-2',
+          role: 'student',
+          fullName: 'ساندرا أمير صبحي',
+          phone: '01211111105',
+          parentPhone: '01222222205',
+          password: '123',
+          birthDate: '2016-06-22',
+          className: 'فصل رابعة',
+          status: 'approved',
+          avatar: makeAvatar('سا', '#e0e7ff', '#4338ca'),
+          quickLoginEnabled: false,
+        },
+        {
+          id: 'stu-5-1',
+          role: 'student',
+          fullName: 'مارك تامر وجيه',
+          phone: '01211111106',
+          parentPhone: '01222222206',
+          password: '123',
+          birthDate: '2015-10-11',
+          className: 'فصل خامسة',
+          status: 'approved',
+          avatar: makeAvatar('ما', '#ffedd5', '#c2410c'),
+          quickLoginEnabled: false,
+        },
+        {
+          id: 'stu-6-1',
+          role: 'student',
+          fullName: 'دميانة شريف زكي',
+          phone: '01211111107',
+          parentPhone: '01222222207',
+          password: '123',
+          birthDate: '2014-12-01',
+          className: 'فصل سادسة',
+          status: 'approved',
+          avatar: makeAvatar('دم', '#f3e8ff', '#6b21a8'),
+          quickLoginEnabled: false,
+        },
+      ],
+
+      // طلبات الانضمام (قيد المراجعة / مقبول / مرفوض) — للأدمن فقط
+      joinRequests: [
+        {
+          id: 'req-101',
+          role: 'student',
+          fullName: 'بيتر عادل مرقس',
+          phone: '01299998801',
+          parentPhone: '01288887701',
+          password: '123',
+          birthDate: '2017-03-15',
+          className: 'فصل ثالثة',
+          status: 'pending',
+          avatar: makeAvatar('بي', '#dbeafe', '#1e3a8a'),
+          createdAt: 'اليوم — 10:15 ص',
+        },
+        {
+          id: 'req-102',
+          role: 'student',
+          fullName: 'جوليانا نادر إسكندر',
+          phone: '01299998802',
+          parentPhone: '01288887702',
+          password: '123',
+          birthDate: '2016-08-09',
+          className: 'فصل رابعة',
+          status: 'pending',
+          avatar: makeAvatar('جو', '#fce7f3', '#9d174d'),
+          createdAt: 'أمس — 6:40 م',
+        },
+      ],
+
+      // درجات وسجلات التقييم الأسبوعي والحضور التراكمي لكل مخدوم
+      // ملاحظة التقييم الأسبوعي: الحضور (20) + الكتاب المقدس (15) + حفظ الآية (10) = 45 (مع بند الهدوء 0-5 ويُضبط الإجمالي ضمن 45 أو يدوياً للأدمن)
+      studentScores: {
+        'stu-3-1': {
+          attendancePts: 20,
+          biblePts: 15,
+          versePts: 8,
+          conductPts: 2,
+          evalTotal: 45,
+          absentThisWeek: false,
+          lastCheckInTime: '07:00 م',
+          quizTotal: 24,
+          readingWeekDays: 7,
+          readingCumulativeDays: 21,
+          readingWeekPts: 7,
+          readingCumulativePts: 21,
+          bonatWeekEarned: 5,
+          bonatCumulativeAvailable: 14,
+          bonatDeliveredFlag: false,
+        },
+        'stu-3-2': {
+          attendancePts: 18.5,
+          biblePts: 15,
+          versePts: 7,
+          conductPts: 2,
+          evalTotal: 42.5,
+          absentThisWeek: false,
+          lastCheckInTime: '07:06 م',
+          quizTotal: 22,
+          readingWeekDays: 6,
+          readingCumulativeDays: 18,
+          readingWeekPts: 6,
+          readingCumulativePts: 18,
+          bonatWeekEarned: 4,
+          bonatCumulativeAvailable: 11,
+          bonatDeliveredFlag: false,
+        },
+        'stu-3-3': {
+          attendancePts: 0,
+          biblePts: 0,
+          versePts: 0,
+          conductPts: 0,
+          evalTotal: 0,
+          absentThisWeek: true,
+          lastCheckInTime: 'غائب',
+          quizTotal: 19,
+          readingWeekDays: 0,
+          readingCumulativeDays: 9,
+          readingWeekPts: 0,
+          readingCumulativePts: 9,
+          bonatWeekEarned: 0,
+          bonatCumulativeAvailable: 5,
+          bonatDeliveredFlag: false,
+        },
+        'stu-4-1': {
+          attendancePts: 20,
+          biblePts: 15,
+          versePts: 8,
+          conductPts: 2,
+          evalTotal: 45,
+          absentThisWeek: false,
+          lastCheckInTime: '07:00 م',
+          quizTotal: 25,
+          readingWeekDays: 7,
+          readingCumulativeDays: 14,
+          readingWeekPts: 7,
+          readingCumulativePts: 14,
+          bonatWeekEarned: 5,
+          bonatCumulativeAvailable: 10,
+          bonatDeliveredFlag: false,
+        },
+        'stu-4-2': {
+          attendancePts: 17,
+          biblePts: 15,
+          versePts: 6,
+          conductPts: 2,
+          evalTotal: 40,
+          absentThisWeek: false,
+          lastCheckInTime: '07:12 م',
+          quizTotal: 20,
+          readingWeekDays: 4,
+          readingCumulativeDays: 10,
+          readingWeekPts: 4,
+          readingCumulativePts: 10,
+          bonatWeekEarned: 0,
+          bonatCumulativeAvailable: 4,
+          bonatDeliveredFlag: false,
+        },
+        'stu-5-1': {
+          attendancePts: 20,
+          biblePts: 15,
+          versePts: 7,
+          conductPts: 3,
+          evalTotal: 45,
+          absentThisWeek: false,
+          lastCheckInTime: '07:00 م',
+          quizTotal: 23,
+          readingWeekDays: 6,
+          readingCumulativeDays: 12,
+          readingWeekPts: 6,
+          readingCumulativePts: 12,
+          bonatWeekEarned: 4,
+          bonatCumulativeAvailable: 8,
+          bonatDeliveredFlag: false,
+        },
+        'stu-6-1': {
+          attendancePts: 19,
+          biblePts: 15,
+          versePts: 8,
+          conductPts: 2,
+          evalTotal: 44,
+          absentThisWeek: false,
+          lastCheckInTime: '07:04 م',
+          quizTotal: 24,
+          readingWeekDays: 7,
+          readingCumulativeDays: 20,
+          readingWeekPts: 7,
+          readingCumulativePts: 20,
+          bonatWeekEarned: 5,
+          bonatCumulativeAvailable: 13,
+          bonatDeliveredFlag: false,
+        },
+      },
+
+      // إعدادات القراءات اليومية لكل فصل
+      readingConfigs: {
+        'فصل ثالثة': { book: 'إنجيل متى', chapter: 5, versesPerDay: 2, dayOffset: 1, audioFileUrl: '', audioFileName: '' },
+        'فصل رابعة': { book: 'سفر المزامير', chapter: 23, versesPerDay: 2, dayOffset: 0, audioFileUrl: '', audioFileName: '' },
+        'فصل خامسة': { book: 'إنجيل يوحنا', chapter: 10, versesPerDay: 2, dayOffset: 1, audioFileUrl: '', audioFileName: '' },
+        'فصل سادسة': { book: 'إنجيل يوحنا', chapter: 15, versesPerDay: 1, dayOffset: 2, audioFileUrl: '', audioFileName: '' },
+      },
+
+      // تسجيلات المخدومين الصوتية للقراءات اليومية
+      dailyReadingSubmissions: [
+        {
+          id: 'rec-1',
+          studentId: 'stu-3-1',
+          studentName: 'يوسف مينا جرجس',
+          className: 'فصل ثالثة',
+          dateKey: new Date().toISOString().slice(0, 10),
+          status: 'accepted', // 'submitted' | 'accepted' | 'rejected'
+          rejectReason: '',
+          audioUrl: '',
+          submittedAt: '09:15 ص',
+        },
+      ],
+
+      audioPlayerState: {
+        isPlaying: false,
+        isPaused: false,
+        rate: 1.0,
+        activeVerseIndex: -1,
+        progressPercent: 0,
+        elapsedSeconds: 0,
+        statusMessage: 'جاهز لتشغيل القراءة اليومية المسموعة',
+      },
+
+      // المسابقات الأسبوعية لكل فصل (10 اختيارات + 10 صح/خطأ + 1 ترتيب أحداث = 25 درجة)
+      quizzes: {},
+      quizResults: {
+        'stu-3-1': 24,
+        'stu-3-2': 22,
+        'stu-4-1': 25,
+        'stu-5-1': 23,
+        'stu-6-1': 24,
+      },
+
+      // التنبيهات لكل فصل (مكتوبة أو صوتية)
+      classAnnouncements: [
+        {
+          id: 'ann-1',
+          className: 'فصل ثالثة',
+          title: 'تنبيه هام لموعد الاجتماع ومراجعة آية الأسبوع',
+          text: 'أولادنا الحلوين في فصل ثالثة، ميعادنا يوم الخميس الساعة 7:00 مساءً بالضبط ومعانا الكتاب المقدس!',
+          author: 'خ. مريم أشرف فهيم',
+          time: 'اليوم — 11:00 ص',
+          audioUrl: '',
+        },
+        {
+          id: 'ann-2',
+          className: 'فصل رابعة',
+          title: 'تذكير بقراءة مزمور 23 يومياً',
+          text: 'شجعوا بعض نقرأ آياتنا كل يوم عشان ناخد الـ 5 بونات كاملة يوم الخميس!',
+          author: 'خ. كيرلس مجدي عزيز',
+          time: 'أمس — 8:00 م',
+          audioUrl: '',
+        },
+      ],
+
+      // تعليمات الأدمن للخدام فقط في كل الفصول
+      adminServantInstructions: [
+        {
+          id: 'inst-1',
+          text: 'يرجى تسجيل حضور المخدومين فور دخولهم من الساعة 7:00 مساءً بدقة، ومراجعة التسجيلات الصوتية للقراءات قبل الساعة 12:01 صباحاً.',
+          time: 'منذ يومين',
+        },
+      ],
+
+      // محتوى الفصول (PDF - صور - لينكات وفيديوهات)
+      classResources: {
+        'فصل ثالثة': [
+          { id: 'res-1', type: 'pdf', title: 'ملخص درس الموعظة على الجبل.pdf', url: '#', addedBy: 'خ. مريم أشرف' },
+          { id: 'res-2', type: 'video', title: 'ترنيمة طوبى للرحماء — فيديو تشجيعي', url: 'https://www.youtube.com', addedBy: 'خ. مريم أشرف' },
+        ],
+        'فصل رابعة': [
+          { id: 'res-3', type: 'pdf', title: 'تأملات للأطفال في مزمور الرب راعي.pdf', url: '#', addedBy: 'خ. كيرلس مجدي' },
+        ],
+        'فصل خامسة': [],
+        'فصل سادسة': [],
+      },
+
+      // دردشة الخدام والأدمن داخل كل فصل
+      servantChats: {
+        'فصل ثالثة': [
+          { id: 'msg-1', sender: 'خ. مريم أشرف فهيم', role: 'خادم', text: 'صباح الخير يا خدام، تم تجهيز مسابقة الأسبوع لفصل ثالثة 🙏', time: '10:30 ص' },
+          { id: 'msg-2', sender: 'أ. بيشوي سمير حنا', role: 'أدمن', text: 'ربنا يبارك خدمتكم، مجهود ممتاز مع الأولاد 🌟', time: '10:45 ص' },
+        ],
+        'فصل رابعة': [],
+        'فصل خامسة': [],
+        'فصل سادسة': [],
+      },
+
+      // المقترحات والشكاوى (تظهر للأدمن والخدام فقط مع إمكانية الرد، ويرى المخدوم رسائله والردود عليها فقط)
+      suggestions: [
+        {
+          id: 'sug-1',
+          studentId: 'stu-3-1',
+          studentName: 'يوسف مينا جرجس',
+          className: 'فصل ثالثة',
+          text: 'ياريت نعمل مسابقة جماعية بالفرق في آخر الشهر عن حفظ المزامير.',
+          time: 'أمس',
+          reply: {
+            text: 'فكرة رائعة يا يوسف يا بطل! هنعمل مسابقة الفرق في آخر الشهر وهتكون مفاجأة جميلة لفصل ثالثة 🌟',
+            byName: 'خ. مريم أشرف فهيم',
+            byRole: 'خادم',
+            time: 'اليوم — 1:30 م',
+          },
+        },
+      ],
+      complaints: [
+        {
+          id: 'cmp-1',
+          studentId: 'stu-4-2',
+          studentName: 'ساندرا أمير صبحي',
+          className: 'فصل رابعة',
+          text: 'أحياناً الصوت في التسجيل القديم كان بيقطع عند فتح الصفحة.',
+          time: 'منذ يومين',
+          reply: null,
+        },
+      ],
+
+      notificationsLog: [
+        { id: 'n-1', text: '⏰ تم تحديث القراءات اليومية تلقائياً الساعة 12:01 صباحاً — اقرأ وسجل صوتك الآن!', time: '12:01 ص' },
+        { id: 'n-2', text: '🌟 تذكير مشجع لأبطال ابتدائي: لا تنسوا قراءة آيات اليوم قبل منتصف الليل للحصول على البونات!', time: 'منذ ساعتين' },
+      ],
+    };
+
+    let appState = loadState();
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          return { ...INITIAL_STATE, ...parsed };
+        }
+      } catch (e) {}
+      const fresh = JSON.parse(JSON.stringify(INITIAL_STATE));
+      CLASSES.forEach((cls) => {
+        fresh.quizzes[cls] = generateDefaultQuiz(cls, 'إنجيل متى', 5, 1, 10);
+      });
+      return fresh;
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      } catch (e) {}
+    }
+
+    // =========================================================================
+    // 3. دوال مساعدة وصلاحيات
+    // =========================================================================
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function showToast(message, icon = '✨') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const toast = document.createElement('div');
+      toast.className = 'pointer-events-auto bg-slate-900/95 text-white px-4 py-3 rounded-2xl shadow-xl border border-amber-400/40 flex items-center gap-2.5 text-xs sm:text-sm font-extrabold transition-all';
+      toast.innerHTML = `<span class="text-lg">${icon}</span><span class="flex-1 leading-relaxed">${escapeHtml(message)}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3600);
+    }
+
+    function getActiveLogoSrc() {
+      return appState.customLogo || ATTACHED_COVER_LOGO;
+    }
+
+    function isAdmin() {
+      return appState.currentUser && appState.currentUser.role === 'admin';
+    }
+
+    function isServant() {
+      return appState.currentUser && appState.currentUser.role === 'servant';
+    }
+
+    function isStudent() {
+      return appState.currentUser && appState.currentUser.role === 'student';
+    }
+
+    function getAccessibleClasses() {
+      if (!appState.currentUser) return [];
+      if (isAdmin()) return [...CLASSES];
+      if (isServant()) return appState.currentUser.assignedClasses || [appState.currentUser.className];
+      return [appState.currentUser.className];
+    }
+
+    function ensureSelectedClass() {
+      const allowed = getAccessibleClasses();
+      if (!allowed.length) return;
+      if (!allowed.includes(appState.selectedClass)) {
+        appState.selectedClass = allowed[0];
+      }
+    }
+
+    function getClassStudents(cls) {
+      return appState.users.filter((u) => u.role === 'student' && u.status === 'approved' && u.className === cls);
+    }
+
+    function getStudentScore(studentId) {
+      if (!appState.studentScores[studentId]) {
+        appState.studentScores[studentId] = {
+          attendancePts: 0,
+          biblePts: 0,
+          versePts: 0,
+          conductPts: 0,
+          evalTotal: 0,
+          absentThisWeek: true,
+          lastCheckInTime: 'لم يسجل بعد',
+          quizTotal: 0,
+          readingWeekDays: 0,
+          readingCumulativeDays: 0,
+          readingWeekPts: 0,
+          readingCumulativePts: 0,
+          bonatWeekEarned: 0,
+          bonatCumulativeAvailable: 0,
+          bonatDeliveredFlag: false,
+        };
+      }
+      return appState.studentScores[studentId];
+    }
+
+    // قاعدة حساب البونات الأسبوعية بدقة (الخميس إلى الأربعاء)
+    function calculateWeeklyBonat(weekPoints) {
+      if (weekPoints >= 7) return 5;
+      if (weekPoints === 6) return 4;
+      return 0;
+    }
+
+    function getTodayVersesForClass(cls) {
+      const cfg = appState.readingConfigs[cls] || { book: 'إنجيل متى', chapter: 5, versesPerDay: 2, dayOffset: 0 };
+      const bookData = BIBLE_CHAPTERS[cfg.book] || BIBLE_CHAPTERS['إنجيل متى'];
+      const chapterVerses = bookData[cfg.chapter] || Object.values(bookData)[0];
+      const count = Math.max(1, Number(cfg.versesPerDay) || 2);
+      const startIdx = ((cfg.dayOffset || 0) * count) % chapterVerses.length;
+      const verses = [];
+      for (let i = 0; i < count; i++) {
+        verses.push(chapterVerses[(startIdx + i) % chapterVerses.length]);
+      }
+      return { cfg, verses };
+    }
+
+    // =========================================================================
+    // 4. شاشة الغلاف (Splash / Cover Screen) بالشعار المرفق والعبارات الثلاث
+    // =========================================================================
+    function renderCoverScreen() {
+      return `
+        <div class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 text-center">
+          <div class="max-w-xl w-full bg-white/95 backdrop-blur-md rounded-[2.2rem] p-6 sm:p-10 shadow-kid border-2 border-amber-200">
+            <!-- عرض الشعار المرفق كما هو بالضبط دون أي تغيير أو تعديل -->
+            <div class="mx-auto mb-5 flex items-center justify-center animate-float">
+              <img
+                src="${getActiveLogoSrc()}"
+                onerror="this.onerror=null; this.src=getDefaultLogoDataUrl();"
+                alt="شعار مدرسة الكتاب المقدس — كنيسة الشهيد العظيم مارمينا العجائبي والبابا كيرلس السادس"
+                class="max-h-56 sm:max-h-64 w-auto object-contain"
+              />
+            </div>
+
+            <!-- العبارات الثلاث المطلوبة بوضوح وتنسيق أنيق -->
+            <div class="space-y-2.5 mb-7">
+              <h1 class="text-2xl sm:text-4xl font-black text-blue-900 tracking-tight">مدرسة الكتاب المقدس</h1>
+              <p class="text-lg sm:text-xl font-extrabold text-sky-600">خدمة مدارس الأحد</p>
+              <p class="text-sm sm:text-base font-bold text-slate-800 bg-amber-50 border border-amber-300 rounded-2xl py-3 px-4 leading-relaxed">
+                كنيسة الشهيد العظيم مارمينا العجائبي والبابا كيرلس السادس
+              </p>
+            </div>
+
+            <!-- أزرار الانتقال إلى شاشة تسجيل الدخول أو طلب الانضمام -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <button
+                onclick="appState.screen='auth'; appState.authTab='login'; render();"
+                class="btn-kid bg-gradient-to-l from-blue-600 to-sky-500 hover:from-blue-700 hover:to-sky-600 text-white font-extrabold py-4 px-6 rounded-2xl shadow-lg text-base flex items-center justify-center gap-2"
+              >
+                <span>🔐</span>
+                <span>تسجيل الدخول</span>
+              </button>
+              <button
+                onclick="appState.screen='auth'; appState.authTab='join'; render();"
+                class="btn-kid bg-gradient-to-l from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold py-4 px-6 rounded-2xl shadow-lg text-base flex items-center justify-center gap-2"
+              >
+                <span>📝</span>
+                <span>طلب انضمام جديد</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // 5. شاشة تسجيل الدخول وطلب الانضمام وقفل التصفح قبل موافقة الأدمن
+    // =========================================================================
+    function renderAuthScreen() {
+      const quickUsers = appState.users.filter((u) => u.status === 'approved' && u.quickLoginEnabled);
+
+      return `
+        <div class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6">
+          <div class="max-w-xl w-full bg-white rounded-[2rem] p-5 sm:p-8 shadow-kid border-2 border-blue-100 space-y-5">
+            <div class="flex items-center justify-between">
+              <button onclick="appState.screen='cover'; render();" class="text-xs font-extrabold text-slate-600 hover:text-blue-700 bg-slate-100 px-3 py-2 rounded-xl">
+                ← العودة للغلاف
+              </button>
+              <div class="flex items-center gap-2">
+                <img src="${getActiveLogoSrc()}" onerror="this.onerror=null; this.src=getDefaultLogoDataUrl();" class="w-9 h-9 object-contain" alt="شعار" />
+                <span class="font-black text-blue-900 text-sm">مدرسة الكتاب المقدس</span>
+              </div>
+            </div>
+
+            <!-- التبديل بين تسجيل الدخول وطلب الانضمام -->
+            <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1.5 rounded-2xl">
+              <button
+                onclick="appState.authTab='login'; render();"
+                class="py-2.5 rounded-xl text-sm font-black transition-all ${
+                  appState.authTab === 'login' ? 'bg-blue-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'
+                }"
+              >
+                🔐 تسجيل الدخول
+              </button>
+              <button
+                onclick="appState.authTab='join'; render();"
+                class="py-2.5 rounded-xl text-sm font-black transition-all ${
+                  appState.authTab === 'join' ? 'bg-amber-500 text-white shadow' : 'text-slate-600 hover:text-slate-900'
+                }"
+              >
+                📝 طلب انضمام للمخدوم / خادم
+              </button>
+            </div>
+
+            ${
+              appState.authTab === 'login'
+                ? `
+              <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
+                <div>
+                  <label class="block text-xs font-extrabold text-slate-700 mb-1.5">📱 رقم التليفون (واتس آب)</label>
+                  <input id="login-phone" type="tel" required placeholder="أدخل رقم التليفون المسجل..." class="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 focus:border-blue-500 outline-none text-sm font-bold" />
+                </div>
+                <div>
+                  <label class="block text-xs font-extrabold text-slate-700 mb-1.5">🔑 كلمة السر</label>
+                  <input id="login-password" type="password" required placeholder="أدخل كلمة السر..." class="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 focus:border-blue-500 outline-none text-sm font-bold" />
+                </div>
+                <button type="submit" class="w-full btn-kid bg-gradient-to-l from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black py-3.5 rounded-2xl shadow-lg text-base">
+                  دخول إلى التطبيق 🚀
+                </button>
+              </form>
+
+              <!-- الدخول السريع / البصمة للتجربة والوصول السريع -->
+              <div class="pt-3 border-t border-slate-100 space-y-2.5">
+                <p class="text-xs font-extrabold text-slate-500 text-center">👆 الدخول السريع / البصمة على الجهاز (أو للتجربة المباشرة):</p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  ${quickUsers
+                    .map(
+                      (u) => `
+                    <button type="button" onclick="quickLoginById('${u.id}')" class="btn-kid bg-sky-50 hover:bg-sky-100 border border-sky-200 p-2.5 rounded-2xl text-right flex items-center gap-2">
+                      <img src="${u.avatar}" class="w-9 h-9 rounded-full object-cover border border-white shadow-sm" alt="صورة" />
+                      <div class="min-w-0">
+                        <p class="text-xs font-black text-slate-900 truncate">${escapeHtml(u.fullName.split(' ')[0])} ${escapeHtml(u.fullName.split(' ')[1] || '')}</p>
+                        <p class="text-[10px] font-bold text-blue-700">${u.role === 'admin' ? '👑 أدمن' : u.role === 'servant' ? '🛡️ خادم' : '🎒 مخدوم'}</p>
+                      </div>
+                    </button>
+                  `
+                    )
+                    .join('')}
+                </div>
+              </div>
+            `
+                : `
+              <form onsubmit="handleJoinRequestSubmit(event)" class="space-y-3.5">
+                <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-xs font-bold text-amber-900">
+                  ⚠️ تنبيه هام: أي طلب انضمام جديد يدخل بحالة <strong>«قيد المراجعة»</strong> ولا يُسمح بتصفح أي محتوى في التطبيق إلا بعد موافقة واعتماد الأدمن رسمياً.
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-extrabold text-slate-700 mb-1">نوع الحساب *</label>
+                    <select id="join-role" class="w-full px-3.5 py-2.5 rounded-2xl border-2 border-slate-200 focus:border-amber-500 outline-none text-sm font-bold bg-white">
+                      <option value="student">🎒 مخدوم (مرحلة ابتدائي)</option>
+                      <option value="servant">🛡️ خادم (يتطلب موافقة الأدمن)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-extrabold text-slate-700 mb-1">الفصل المراد الالتحاق به *</label>
+                    <select id="join-class" required class="w-full px-3.5 py-2.5 rounded-2xl border-2 border-slate-200 focus:border-amber-500 outline-none text-sm font-bold bg-white">
+                      ${CLASSES.map((c) => `<option value="${c}">${c}</option>`).join('')}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-extrabold text-slate-700 mb-1">📸 صورة شخصية للمخدوم (إجباري) *</label>
+                  <input id="join-avatar" type="file" accept="image/*" required class="w-full px-3 py-2 rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50/40 text-xs font-bold" />
+                </div>
+
+                <div>
+                  <label class="block text-xs font-extrabold text-slate-700 mb-1">✍️ الاسم ثلاثي *</label>
+                  <input id="join-name" type="text" required placeholder="مثال: يوسف مينا جرجس" class="w-full px-3.5 py-2.5 rounded-2xl border-2 border-slate-200 focus:border-amber-500 outline-none text-sm font-bold" />
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-extrabold text-slate-700 mb-1">📱 رقم تليفون المخدوم (واتس آب) *</label>
+                    <input id="join-phone" type="tel" required placeholder="01xxxxxxxxx" class="w-full px-3.5 py-2.5 rounded-2xl border-2 border-slate-200 focus:border-amber-500 outline-none text-sm font-bold" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-extrabold text-slate-700 mb-1">👨‍👩‍👦 رقم تليفون ولي الأمر (واتس آب) *</label>
+                    <input id="join-parent-phone" type="tel" required placeholder="01xxxxxxxxx" class="w-full px-3.5 py-2.5 rounded-2xl border-2 border-slate-200 focus:border-amber-500 outline-none text-sm font-bold" />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-extrabold text-slate-700 mb-1">🎂 تاريخ الميلاد *</label>
+                    <input id="join-birth" type="date" required class="w-full px-3.5 py-2.5 rounded-2xl border-2 border-slate-200 focus:border-amber-500 outline-none text-sm font-bold" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-extrabold text-slate-700 mb-1">🔑 كلمة السر للدخول *</label>
+                    <input id="join-password" type="password" required placeholder="اختر كلمة سر سهلة" class="w-full px-3.5 py-2.5 rounded-2xl border-2 border-slate-200 focus:border-amber-500 outline-none text-sm font-bold" />
+                  </div>
+                </div>
+
+                <button type="submit" class="w-full btn-kid bg-gradient-to-l from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black py-3.5 rounded-2xl shadow-lg text-base">
+                  إرسال طلب الانضمام للمراجعة 📩
+                </button>
+              </form>
+            `
+            }
+          </div>
+        </div>
+      `;
+    }
+
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      const phone = document.getElementById('login-phone').value.trim();
+      const password = document.getElementById('login-password').value.trim();
+
+      // التحقق أولاً هل الرقم موجود في طلبات الانضمام المعلقة أو المرفوضة (قاعدة صارمة لمنع التصفح قبل القبول)
+      const pendingOrRejected = appState.joinRequests.find((r) => r.phone === phone && r.password === password);
+      if (pendingOrRejected && pendingOrRejected.status !== 'approved') {
+        if (pendingOrRejected.status === 'pending') {
+          showToast('⛔ طلب انضمامك لا يزال «قيد المراجعة» وبانتظار موافقة الأدمن. لا يمكنك الدخول حالياً.', '⏳');
+        } else {
+          showToast('❌ عذراً، تم رفض طلب الانضمام. يرجى مراجعة أمين الخدمة.', '🚫');
+        }
+        return;
+      }
+
+      const user = appState.users.find((u) => u.phone === phone && u.password === password);
+      if (!user) {
+        showToast('بيانات الدخول غير صحيحة! تأكد من رقم التليفون وكلمة السر.', '⚠️');
+        return;
+      }
+      if (user.status !== 'approved') {
+        showToast('⛔ حسابك غير مفعّل بعد وبانتظار موافقة الأدمن.', '⏳');
+        return;
+      }
+
+      appState.currentUser = user;
+      appState.screen = 'app';
+      appState.activeNav = 'home';
+      ensureSelectedClass();
+      saveState();
+      showToast(`أهلاً بك يا ${user.fullName} في مدرسة الكتاب المقدس! 🌟`, '🎉');
+      render();
+    }
+
+    function quickLoginById(userId) {
+      const user = appState.users.find((u) => u.id === userId && u.status === 'approved');
+      if (!user) return;
+      appState.currentUser = user;
+      appState.screen = 'app';
+      appState.activeNav = 'home';
+      ensureSelectedClass();
+      saveState();
+      showToast(`تم الدخول السريع كـ ${user.fullName}`, '👆');
+      render();
+    }
+
+    function handleJoinRequestSubmit(e) {
+      e.preventDefault();
+      const role = document.getElementById('join-role').value;
+      const className = document.getElementById('join-class').value;
+      const fullName = document.getElementById('join-name').value.trim();
+      const phone = document.getElementById('join-phone').value.trim();
+      const parentPhone = document.getElementById('join-parent-phone').value.trim();
+      const birthDate = document.getElementById('join-birth').value;
+      const password = document.getElementById('join-password').value.trim();
+      const fileInput = document.getElementById('join-avatar');
+      const file = fileInput.files && fileInput.files[0];
+
+      const nameParts = fullName.split(/\s+/).filter(Boolean);
+      if (nameParts.length < 3) {
+        showToast('يرجى إدخال الاسم ثلاثياً على الأقل!', '✍️');
+        return;
+      }
+      if (!file) {
+        showToast('يرجى رفع الصورة الشخصية للمخدوم!', '📸');
+        return;
+      }
+      if (appState.users.some((u) => u.phone === phone) || appState.joinRequests.some((r) => r.phone === phone)) {
+        showToast('رقم التليفون مسجل بالفعل في النظام!', '📱');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function (ev) {
+        const newReq = {
+          id: 'req-' + Date.now(),
+          role,
+          fullName,
+          phone,
+          parentPhone,
+          password,
+          birthDate,
+          className,
+          status: 'pending',
+          avatar: ev.target.result,
+          createdAt: new Date().toLocaleDateString('ar-EG'),
+        };
+        appState.joinRequests.unshift(newReq);
+        appState.authTab = 'login';
+        saveState();
+        showToast('✅ تم إرسال طلب الانضمام بنجاح! حسابك الآن «قيد المراجعة» ولن يتم فتح التطبيق إلا بعد موافقة الأدمن.', '⏳');
+        render();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function logoutUser() {
+      stopDailyReadingAudio();
+      appState.currentUser = null;
+      appState.screen = 'cover';
+      saveState();
+      render();
+    }
+
+    // =========================================================================
+    // 6. الهيكل الرئيسي للتطبيق (بعد تسجيل الدخول المعتمد فقط)
+    // =========================================================================
+    function renderAppShell() {
+      // حماية صارمة: لا يسمح بالعرض إلا لمستخدم معتمد
+      if (!appState.currentUser || appState.currentUser.status !== 'approved') {
+        appState.screen = 'auth';
+        return renderAuthScreen();
+      }
+
+      ensureSelectedClass();
+      const cls = appState.selectedClass;
+      const allowedClasses = getAccessibleClasses();
+
+      const navItems = [
+        { id: 'home', label: 'الرئيسية', icon: '🏠' },
+        { id: 'attendance', label: 'الحضور والتقييم', icon: '✅' },
+        { id: 'readings', label: 'القراءات والبونات', icon: '📖' },
+        { id: 'quiz', label: 'المسابقة الأسبوعية', icon: '🧩' },
+        { id: 'leaderboards', label: 'الأوائل والدرجات', icon: '🏆' },
+        { id: 'resources', label: 'محتوى الفصل', icon: '🎒' },
+      ];
+      if (isAdmin()) {
+        navItems.push({ id: 'admin', label: 'إدارة الأدمن', icon: '👑' });
+      }
+
+      return `
+        <div class="min-h-screen flex flex-col pb-12">
+          <!-- الشريط العلوي -->
+          <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b-2 border-blue-100 shadow-sm">
+            <div class="max-w-6xl mx-auto px-3 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2.5">
+                <img src="${getActiveLogoSrc()}" onerror="this.onerror=null; this.src=getDefaultLogoDataUrl();" class="w-11 h-11 object-contain" alt="شعار" />
+                <div>
+                  <h1 class="text-sm sm:text-base font-black text-blue-950">مدرسة الكتاب المقدس</h1>
+                  <p class="text-[11px] font-bold text-slate-500">كنيسة مارمينا العجائبي والبابا كيرلس السادس</p>
+                </div>
+              </div>
+
+              <!-- اختيار الفصل (للمخدوم يظهر فصله فقط، وللخادم فصوله، وللأدمن كل الفصول الأربعة) -->
+              <div class="flex items-center gap-2 flex-wrap">
+                ${
+                  allowedClasses.length > 1
+                    ? `
+                  <select onchange="appState.selectedClass=this.value; stopDailyReadingAudio(); render();" class="bg-amber-50 border-2 border-amber-300 text-amber-950 font-black text-xs sm:text-sm px-3 py-2 rounded-2xl outline-none">
+                    ${allowedClasses.map((c) => `<option value="${c}" ${c === cls ? 'selected' : ''}>🏫 ${c}</option>`).join('')}
+                  </select>
+                `
+                    : `<span class="bg-amber-100 text-amber-950 border border-amber-300 font-black text-xs sm:text-sm px-3.5 py-2 rounded-2xl">🏫 ${escapeHtml(cls)}</span>`
+                }
+
+                <div class="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-2xl border border-blue-100">
+                  <img src="${appState.currentUser.avatar}" class="w-8 h-8 rounded-full object-cover" alt="صورة" />
+                  <div class="hidden sm:block text-right">
+                    <p class="text-xs font-black text-blue-950">${escapeHtml(appState.currentUser.fullName)}</p>
+                    <p class="text-[10px] font-bold text-blue-600">${isAdmin() ? '👑 أدمن' : isServant() ? '🛡️ خادم' : '🎒 مخدوم'}</p>
+                  </div>
+                </div>
+
+                <button onclick="logoutUser()" class="btn-kid bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-3 py-2 rounded-2xl text-xs font-extrabold">
+                  خروج
+                </button>
+              </div>
+            </div>
+
+            <!-- شريط التنقل التفاعلي -->
+            <nav class="max-w-6xl mx-auto px-3 sm:px-6 pb-2.5 flex items-center gap-2 overflow-x-auto">
+              ${navItems
+                .map(
+                  (item) => `
+                <button
+                  onclick="appState.activeNav='${item.id}'; render();"
+                  class="btn-kid whitespace-nowrap px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-extrabold flex items-center gap-1.5 transition-all ${
+                    appState.activeNav === item.id
+                      ? 'bg-gradient-to-l from-blue-600 to-sky-500 text-white shadow-md'
+                      : 'bg-slate-100/80 hover:bg-blue-50 text-slate-700'
+                  }"
+                >
+                  <span>${item.icon}</span>
+                  <span>${item.label}</span>
+                </button>
+              `
+                )
+                .join('')}
+            </nav>
+          </header>
+
+          <!-- محتوى الصفحة النشطة -->
+          <main class="max-w-6xl w-full mx-auto px-3 sm:px-6 pt-5 flex-1">
+            ${renderActiveTabContent(cls)}
+          </main>
+        </div>
+      `;
+    }
+
+    function renderActiveTabContent(cls) {
+      switch (appState.activeNav) {
+        case 'attendance':
+          return renderAttendanceTab(cls);
+        case 'readings':
+          return renderReadingsTab(cls);
+        case 'quiz':
+          return renderQuizTab(cls);
+        case 'leaderboards':
+          return renderLeaderboardsTab(cls);
+        case 'resources':
+          return renderResourcesTab(cls);
+        case 'admin':
+          return isAdmin() ? renderAdminTab() : renderHomeTab(cls);
+        default:
+          return renderHomeTab(cls);
+      }
+    }
+
+    // =========================================================================
+    // 7. الصفحة الرئيسية (فيديو الشرح التلقائي + التنبيهات + البونات + المقترحات والشكاوى)
+    // =========================================================================
+    function renderHomeTab(cls) {
+      const myScore = isStudent() ? getStudentScore(appState.currentUser.id) : null;
+      const totalCumulative = myScore
+        ? myScore.evalTotal + myScore.quizTotal + myScore.readingCumulativePts
+        : 0;
+      const classAnns = appState.classAnnouncements.filter((a) => a.className === cls);
+
+      const roleVideoTitle = isAdmin()
+        ? '🎬 فيديو الشرح التوضيحي للأدمن (إدارة شاملة للمنصة)'
+        : isServant()
+        ? '🎬 فيديو الشرح التوضيحي للخادم (الحضور، القراءات، المسابقات)'
+        : '🎬 فيديو الشرح التوضيحي للمخدوم (رحلتك الممتعة في مدرسة الكتاب المقدس)';
+
+      const roleVideoScript = isAdmin()
+        ? 'أهلاً بك يا أمين الخدمة. من لوحة الأدمن يمكنك مراجعة واعتماد طلبات الانضمام، إدارة الحسابات وكلمات السر، تعديل أي درجات يدوياً، ونشر التعليمات للخدام.'
+        : isServant()
+        ? 'أهلاً بك يا خادمنا المبارك. يمكنك تسجيل حضور المخدومين من الساعة 7 مساءً، متابعة تسجيلات القراءات اليومية، إعداد المسابقة الأسبوعية، وإرسال تنبيهات الفصل.'
+        : 'أهلاً بك يا بطل ابتدائي في مدرسة الكتاب المقدس! اقرأ آياتك اليومية وسجل صوتك، احضر بدري ومعاك كتابك المقدس، وحل المسابقة الأسبوعية لتجمع البونات والأوسمة!';
+
+      return `
+        <div class="space-y-6">
+          <!-- بطاقة الترحيب وفيديو الشرح التوضيحي التلقائي بالصوت والصورة -->
+          <div class="bg-gradient-to-l from-blue-700 via-blue-600 to-sky-500 text-white rounded-3xl p-5 sm:p-7 shadow-kid">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+              <div class="space-y-2 max-w-2xl">
+                <span class="inline-block bg-white/20 px-3 py-1 rounded-full text-xs font-extrabold">🌟 ${escapeHtml(cls)}</span>
+                <h2 class="text-xl sm:text-2xl font-black">أهلاً بك يا ${escapeHtml(appState.currentUser.fullName)}!</h2>
+                <p class="text-xs sm:text-sm text-blue-50 font-bold leading-relaxed">${escapeHtml(roleVideoScript)}</p>
+                <div class="pt-2 flex flex-wrap gap-2">
+                  <button onclick="speakTextAr('${roleVideoScript.replace(/'/g, '')}')" class="btn-kid bg-amber-400 hover:bg-amber-300 text-blue-950 font-black px-4 py-2.5 rounded-2xl text-xs sm:text-sm shadow flex items-center gap-2">
+                    <span>▶️</span>
+                    <span>تشغيل الشرح التوضيحي بالصوت والصورة</span>
+                  </button>
+                  <button onclick="stopDailyReadingAudio()" class="btn-kid bg-white/20 hover:bg-white/30 text-white font-bold px-3.5 py-2.5 rounded-2xl text-xs">
+                    ⏹️ إيقاف الصوت
+                  </button>
+                </div>
+              </div>
+              <div class="bg-white/15 backdrop-blur-sm border border-white/25 rounded-2xl p-4 lg:w-80 space-y-2">
+                <p class="text-xs font-black text-amber-200">${roleVideoTitle}</p>
+                <div class="h-24 rounded-xl bg-blue-950/40 flex flex-col items-center justify-center text-center p-3 border border-white/10">
+                  <span class="text-3xl mb-1">🎥</span>
+                  <span class="text-[11px] font-bold text-blue-100">عرض تفاعلي مولّد تلقائياً حسب صلاحيتك</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- بطاقة درجات وبونات المخدوم على الشاشة الرئيسية -->
+          ${
+            isStudent() && myScore
+              ? `
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+              <div class="bg-white rounded-3xl p-4 border-2 border-blue-100 shadow-card text-center">
+                <p class="text-2xl mb-1">🏅</p>
+                <p class="text-xs font-bold text-slate-500">المجموع التراكمي الكلي</p>
+                <p class="text-2xl font-black text-blue-900">${totalCumulative} <span class="text-xs">درجة</span></p>
+              </div>
+              <div class="bg-white rounded-3xl p-4 border-2 border-amber-200 shadow-card text-center">
+                <p class="text-2xl mb-1">🎟️</p>
+                <p class="text-xs font-bold text-slate-500">بونات نهاية الأسبوع المستحقة</p>
+                <p class="text-2xl font-black text-amber-600">${myScore.bonatDeliveredFlag ? 0 : myScore.bonatWeekEarned} <span class="text-xs">بون</span></p>
+              </div>
+              <div class="bg-white rounded-3xl p-4 border-2 border-emerald-100 shadow-card text-center">
+                <p class="text-2xl mb-1">📖</p>
+                <p class="text-xs font-bold text-slate-500">قراءات هذا الأسبوع</p>
+                <p class="text-2xl font-black text-emerald-700">${myScore.readingWeekDays} / 7</p>
+              </div>
+              <div class="bg-white rounded-3xl p-4 border-2 border-purple-100 shadow-card text-center">
+                <p class="text-2xl mb-1">🧩</p>
+                <p class="text-xs font-bold text-slate-500">درجة المسابقة</p>
+                <p class="text-2xl font-black text-purple-800">${myScore.quizTotal} / 25</p>
+              </div>
+            </div>
+          `
+              : ''
+          }
+
+          <!-- تعليمات الأدمن للخدام فقط (تظهر للأدمن والخدام في كل الفصول) -->
+          ${
+            isAdmin() || isServant()
+              ? `
+            <div class="bg-amber-50 border-2 border-amber-300 rounded-3xl p-5 shadow-card space-y-3">
+              <h3 class="text-base font-black text-amber-950 flex items-center gap-2">
+                <span>📌</span>
+                <span>تعليمات الأدمن للخدام (خاصة بالخدام والأدمن فقط)</span>
+              </h3>
+              ${appState.adminServantInstructions
+                .map(
+                  (inst) => `
+                <div class="bg-white p-3.5 rounded-2xl border border-amber-200 text-xs sm:text-sm font-bold text-slate-800 flex justify-between gap-2">
+                  <span>${escapeHtml(inst.text)}</span>
+                  <span class="text-[11px] text-slate-400 whitespace-nowrap">${escapeHtml(inst.time)}</span>
+                </div>
+              `
+                )
+                .join('')}
+            </div>
+          `
+              : ''
+          }
+
+          <!-- تنبيهات الفصل الهامة (تظهر بشكل كبير وواضح في الصفحة الرئيسية للفصل) -->
+          <div class="bg-white rounded-3xl p-5 sm:p-6 border-2 border-sky-200 shadow-card space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h3 class="text-base sm:text-lg font-black text-blue-950 flex items-center gap-2">
+                <span>📢</span>
+                <span>تنبيهات ${escapeHtml(cls)} الهامة</span>
+              </h3>
+              <span class="text-xs font-bold bg-sky-100 text-sky-800 px-3 py-1 rounded-full">تصل إشعاراتها لجميع خدام ومخدومي الفصل</span>
+            </div>
+
+            ${
+              !isStudent()
+                ? `
+              <form onsubmit="addClassAnnouncement(event, '${cls}')" class="bg-sky-50/70 p-4 rounded-2xl border border-sky-200 space-y-2.5">
+                <input id="ann-title" type="text" required placeholder="عنوان التنبيه..." class="w-full px-3.5 py-2 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-bold outline-none" />
+                <textarea id="ann-text" rows="2" required placeholder="اكتب نص التنبيه ليصل فوراً لكل خدام ومخدومي ${escapeHtml(cls)}..." class="w-full px-3.5 py-2 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm font-bold outline-none"></textarea>
+                <button type="submit" class="btn-kid bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-extrabold">
+                  نشر التنبيه وإرسال إشعار فوري 🔔
+                </button>
+              </form>
+            `
+                : ''
+            }
+
+            <div class="space-y-3">
+              ${
+                classAnns.length
+                  ? classAnns
+                      .map(
+                        (a) => `
+                  <div class="p-4 rounded-2xl bg-gradient-to-l from-sky-50 to-white border border-sky-200 space-y-1.5">
+                    <div class="flex items-center justify-between text-xs">
+                      <span class="font-black text-blue-900">${escapeHtml(a.title)}</span>
+                      <span class="text-slate-400 font-bold">${escapeHtml(a.time)}</span>
+                    </div>
+                    <p class="text-xs sm:text-sm font-bold text-slate-700 leading-relaxed">${escapeHtml(a.text)}</p>
+                    <p class="text-[11px] font-extrabold text-sky-700">بواسطة: ${escapeHtml(a.author)}</p>
+                  </div>
+                `
+                      )
+                      .join('')
+                  : `<p class="text-xs font-bold text-slate-500">لا توجد تنبيهات جديدة في ${escapeHtml(cls)} حالياً.</p>`
+              }
+            </div>
+          </div>
+
+          <!-- مقترحات وشكاوى المخدوم (يرى المخدوم مقترحاته وشكاواه الشخصية فقط والردود عليها) -->
+          ${isStudent() ? renderStudentFeedbackSection() : ''}
+
+          <!-- لوحة إدارة المقترحات والشكاوى والرد عليها (تظهر للأدمن والخدام فقط، ولا تظهر للمخدومين) -->
+          ${isAdmin() || isServant() ? renderFeedbackManagementBox() : ''}
+        </div>
+      `;
+    }
+
+    function renderFeedbackManagementBox() {
+      if (!isAdmin() && !isServant()) return '';
+
+      const renderItem = (item, type) => {
+        const isSug = type === 'suggestion';
+        const badgeClass = isSug ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800';
+        const cardClass = isSug ? 'bg-emerald-50/60 border-emerald-200' : 'bg-rose-50/60 border-rose-200';
+        const inputId = isSug ? `reply-sug-${item.id}` : `reply-cmp-${item.id}`;
+        const replyBlock = item.reply
+          ? `<div class="bg-white p-2.5 rounded-xl border border-slate-200 text-xs space-y-1">
+              <p class="font-black text-indigo-800">💬 رد ${escapeHtml(item.reply.byName)} (${escapeHtml(item.reply.byRole)}) • ${escapeHtml(item.reply.time)}:</p>
+              <p class="font-bold text-slate-800">${escapeHtml(item.reply.text)}</p>
+            </div>`
+          : '';
+
+        return `
+          <div class="p-3.5 rounded-2xl border ${cardClass} space-y-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-full font-black ${badgeClass}">${isSug ? '💡 مقترح' : '📩 شكوى'}</span>
+                <span class="font-black text-slate-900">${escapeHtml(item.studentName)}</span>
+                <span class="font-bold text-slate-500">(${escapeHtml(item.className)})</span>
+              </div>
+              <span class="text-slate-400 font-bold">${escapeHtml(item.time)}</span>
+            </div>
+            <p class="text-sm font-extrabold text-slate-800">${escapeHtml(item.text)}</p>
+            ${replyBlock}
+            <form onsubmit="replyToFeedback(event, '${type}', '${item.id}')" class="flex gap-2">
+              <input id="${inputId}" type="text" required placeholder="${item.reply ? 'تعديل الرد...' : 'اكتب رداً للمخدوم (يظهر للأدمن والخدام والمخدوم صاحب الرسالة فقط)...'}" class="flex-1 px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-bold outline-none focus:border-indigo-500" />
+              <button type="submit" class="btn-kid bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl text-xs font-extrabold">إرسال الرد</button>
+            </form>
+          </div>
+        `;
+      };
+
+      const sugList = appState.suggestions.length
+        ? appState.suggestions.map((s) => renderItem(s, 'suggestion')).join('')
+        : '<p class="text-xs font-bold text-slate-500">لا توجد مقترحات حالياً.</p>';
+
+      const cmpList = appState.complaints.length
+        ? appState.complaints.map((c) => renderItem(c, 'complaint')).join('')
+        : '<p class="text-xs font-bold text-slate-500">لا توجد شكاوى حالياً.</p>';
+
+      return `
+        <div class="bg-white rounded-3xl p-5 sm:p-6 border-2 border-indigo-100 shadow-card space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="text-base sm:text-lg font-black text-indigo-950 flex items-center gap-2">
+              <span>📬</span>
+              <span>المقترحات والشكاوى والرد عليها (متاحة للأدمن والخدام فقط)</span>
+            </h3>
+            <span class="text-xs font-extrabold bg-indigo-50 text-indigo-800 px-3 py-1 rounded-full">الرد يظهر للأدمن والخدام والمخدوم صاحب الرسالة فقط</span>
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="space-y-3">
+              <h4 class="text-sm font-black text-emerald-900">💡 المقترحات (${appState.suggestions.length})</h4>
+              ${sugList}
+            </div>
+            <div class="space-y-3">
+              <h4 class="text-sm font-black text-rose-900">📩 الشكاوى (${appState.complaints.length})</h4>
+              ${cmpList}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderStudentFeedbackSection() {
+      if (!isStudent()) return '';
+      const myId = appState.currentUser.id;
+      const mySuggestions = appState.suggestions.filter((s) => s.studentId === myId);
+      const myComplaints = appState.complaints.filter((c) => c.studentId === myId);
+
+      const suggestionsHtml = mySuggestions.length
+        ? mySuggestions
+            .map((s) => {
+              const replyHtml = s.reply
+                ? `<div class="bg-white p-3 rounded-xl border border-emerald-300 text-emerald-950 space-y-1">
+                    <p class="font-black text-[11px] text-emerald-700">💬 رد ${escapeHtml(s.reply.byName)} (${escapeHtml(s.reply.byRole)}) • ${escapeHtml(s.reply.time)}:</p>
+                    <p class="font-bold text-slate-800">${escapeHtml(s.reply.text)}</p>
+                  </div>`
+                : `<p class="text-[11px] font-bold text-amber-700">⏳ بانتظار رد الأدمن أو الخادم...</p>`;
+              return `
+                <div class="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-2 text-xs">
+                  <div class="flex justify-between text-slate-500 font-bold">
+                    <span>مقترحك</span>
+                    <span>${escapeHtml(s.time)}</span>
+                  </div>
+                  <p class="font-extrabold text-slate-900">${escapeHtml(s.text)}</p>
+                  ${replyHtml}
+                </div>
+              `;
+            })
+            .join('')
+        : `<p class="text-xs text-slate-500 font-bold">لم ترسل أي مقترحات بعد.</p>`;
+
+      const complaintsHtml = myComplaints.length
+        ? myComplaints
+            .map((c) => {
+              const replyHtml = c.reply
+                ? `<div class="bg-white p-3 rounded-xl border border-rose-300 text-rose-950 space-y-1">
+                    <p class="font-black text-[11px] text-rose-700">💬 رد ${escapeHtml(c.reply.byName)} (${escapeHtml(c.reply.byRole)}) • ${escapeHtml(c.reply.time)}:</p>
+                    <p class="font-bold text-slate-800">${escapeHtml(c.reply.text)}</p>
+                  </div>`
+                : `<p class="text-[11px] font-bold text-amber-700">⏳ بانتظار رد الأدمن أو الخادم...</p>`;
+              return `
+                <div class="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-200 space-y-2 text-xs">
+                  <div class="flex justify-between text-slate-500 font-bold">
+                    <span>شكواك</span>
+                    <span>${escapeHtml(c.time)}</span>
+                  </div>
+                  <p class="font-extrabold text-slate-900">${escapeHtml(c.text)}</p>
+                  ${replyHtml}
+                </div>
+              `;
+            })
+            .join('')
+        : `<p class="text-xs text-slate-500 font-bold">لم ترسل أي شكاوى بعد.</p>`;
+
+      return `
+        <div class="space-y-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onsubmit="submitStudentFeedback(event, 'suggestion')" class="bg-white rounded-3xl p-5 border border-emerald-200 shadow-card space-y-3">
+              <h4 class="font-black text-emerald-900 flex items-center gap-2"><span>💡</span><span>إرسال مقترح (يظهر للأدمن والخدام فقط)</span></h4>
+              <textarea id="student-suggestion-text" rows="3" required placeholder="اكتب فكرتك أو مقترحك الجميل..." class="w-full p-3 rounded-2xl border border-slate-200 text-sm font-bold outline-none focus:border-emerald-500"></textarea>
+              <button type="submit" class="btn-kid bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-2xl text-xs font-extrabold">إرسال المقترح</button>
+            </form>
+            <form onsubmit="submitStudentFeedback(event, 'complaint')" class="bg-white rounded-3xl p-5 border border-rose-200 shadow-card space-y-3">
+              <h4 class="font-black text-rose-900 flex items-center gap-2"><span>📩</span><span>إرسال شكوى (تظهر للأدمن والخدام فقط)</span></h4>
+              <textarea id="student-complaint-text" rows="3" required placeholder="اكتب رسالتك أو شكواك لتصل للأدمن والخدام فقط..." class="w-full p-3 rounded-2xl border border-slate-200 text-sm font-bold outline-none focus:border-rose-500"></textarea>
+              <button type="submit" class="btn-kid bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 rounded-2xl text-xs font-extrabold">إرسال الشكوى</button>
+            </form>
+          </div>
+
+          <div class="bg-white rounded-3xl p-5 sm:p-6 border-2 border-indigo-100 shadow-card space-y-4">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <h4 class="text-base font-black text-indigo-950 flex items-center gap-2"><span>📬</span><span>مقترحاتي وشكاواي السابقة والردود عليها (خاصة بك فقط)</span></h4>
+              <span class="text-xs font-bold text-slate-500">لا يراها أي مخدوم آخر</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="space-y-2.5">
+                <p class="text-xs font-black text-emerald-800">💡 مقترحاتي (${mySuggestions.length})</p>
+                ${suggestionsHtml}
+              </div>
+              <div class="space-y-2.5">
+                <p class="text-xs font-black text-rose-800">📩 شكاواي (${myComplaints.length})</p>
+                ${complaintsHtml}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function addClassAnnouncement(e, cls) {
+      e.preventDefault();
+      const title = document.getElementById('ann-title').value.trim();
+      const text = document.getElementById('ann-text').value.trim();
+      if (!title || !text) return;
+      appState.classAnnouncements.unshift({
+        id: 'ann-' + Date.now(),
+        className: cls,
+        title,
+        text,
+        author: appState.currentUser.fullName,
+        time: 'الآن',
+        audioUrl: '',
+      });
+      saveState();
+      showToast(`تم نشر التنبيه وإرسال إشعار فوري لجميع خدام ومخدومي ${cls} 🔔`, '📢');
+      render();
+    }
+
+    function submitStudentFeedback(e, type) {
+      e.preventDefault();
+      const elId = type === 'suggestion' ? 'student-suggestion-text' : 'student-complaint-text';
+      const text = document.getElementById(elId).value.trim();
+      if (!text) return;
+      const item = {
+        id: type + '-' + Date.now(),
+        studentId: appState.currentUser.id,
+        studentName: appState.currentUser.fullName,
+        className: appState.currentUser.className,
+        text,
+        time: 'الآن',
+        reply: null,
+      };
+      if (type === 'suggestion') {
+        appState.suggestions.unshift(item);
+        showToast('تم إرسال مقترحك للأدمن والخدام بنجاح 💡', '✅');
+      } else {
+        appState.complaints.unshift(item);
+        showToast('تم إرسال شكواك للأدمن والخدام بنجاح 📩', '✅');
+      }
+      document.getElementById(elId).value = '';
+      saveState();
+      render();
+    }
+
+    function replyToFeedback(e, type, itemId) {
+      e.preventDefault();
+      if (!isAdmin() && !isServant()) return;
+      const inputId = type === 'suggestion' ? `reply-sug-${itemId}` : `reply-cmp-${itemId}`;
+      const replyText = document.getElementById(inputId)?.value.trim();
+      if (!replyText) return;
+
+      const list = type === 'suggestion' ? appState.suggestions : appState.complaints;
+      const item = list.find((x) => x.id === itemId);
+      if (!item) return;
+
+      item.reply = {
+        text: replyText,
+        byName: appState.currentUser.fullName,
+        byRole: isAdmin() ? 'أدمن' : 'خادم',
+        time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+      };
+
+      saveState();
+      showToast(`تم إرسال الرد وسيظهر للأدمن والخدام وللمخدوم (${item.studentName}) فقط ✅`, '💬');
+      render();
+    }
+
+    // =========================================================================
+    // 8. نظام الحضور والتقييم الأسبوعي (من 45 درجة) وقائمة الغائبين
+    // =========================================================================
+    function renderAttendanceTab(cls) {
+      const students = getClassStudents(cls);
+      const absents = students.filter((s) => getStudentScore(s.id).absentThisWeek);
+
+      if (isStudent()) {
+        const sc = getStudentScore(appState.currentUser.id);
+        return `
+          <div class="bg-white rounded-3xl p-6 border-2 border-blue-100 shadow-card space-y-4">
+            <h2 class="text-xl font-black text-blue-950">✅ سجل الحضور والتقييم الأسبوعي الخاص بك</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div class="p-4 rounded-2xl bg-blue-50 text-center">
+                <p class="text-xs font-bold text-slate-600">الحضور (من 20)</p>
+                <p class="text-2xl font-black text-blue-900">${sc.attendancePts}</p>
+                <p class="text-[11px] font-bold text-blue-600">${escapeHtml(sc.lastCheckInTime)}</p>
+              </div>
+              <div class="p-4 rounded-2xl bg-amber-50 text-center">
+                <p class="text-xs font-bold text-slate-600">الكتاب المقدس (من 15)</p>
+                <p class="text-2xl font-black text-amber-800">${sc.biblePts}</p>
+              </div>
+              <div class="p-4 rounded-2xl bg-emerald-50 text-center">
+                <p class="text-xs font-bold text-slate-600">حفظ الآية (من 10)</p>
+                <p class="text-2xl font-black text-emerald-800">${sc.versePts}</p>
+              </div>
+              <div class="p-4 rounded-2xl bg-purple-50 text-center">
+                <p class="text-xs font-bold text-slate-600">الهدوء والالتزام (من 5)</p>
+                <p class="text-2xl font-black text-purple-800">${sc.conductPts}</p>
+              </div>
+            </div>
+            <div class="p-4 rounded-2xl bg-gradient-to-l from-blue-600 to-sky-500 text-white flex items-center justify-between">
+              <span class="font-black">إجمالي التقييم الأسبوعي (من 45 درجة):</span>
+              <span class="text-2xl font-black">${sc.evalTotal} / 45</span>
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="space-y-6">
+          <div class="bg-white rounded-3xl p-5 sm:p-6 border-2 border-blue-100 shadow-card space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 class="text-lg sm:text-xl font-black text-blue-950">✅ تسجيل حضور وتقييم مخدومي ${escapeHtml(cls)} (من 45 درجة)</h2>
+                <p class="text-xs font-bold text-slate-500">فترة الحضور: 7:00 إلى 8:30 مساءً (يُخصم 0.25 درجة عن كل دقيقة تأخير تلقائياً حسب ساعة الهاتف — وتعديل درجة الحضور متاح للأدمن فقط)</p>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              ${students
+                .map((st) => {
+                  const sc = getStudentScore(st.id);
+                  return `
+                  <div class="p-4 rounded-2xl border-2 ${sc.absentThisWeek ? 'border-rose-200 bg-rose-50/40' : 'border-emerald-200 bg-emerald-50/30'} space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                      <div class="flex items-center gap-3">
+                        <img src="${st.avatar}" class="w-11 h-11 rounded-full object-cover border border-white shadow" alt="صورة" />
+                        <div>
+                          <p class="font-black text-slate-900">${escapeHtml(st.fullName)}</p>
+                          <p class="text-xs font-bold text-slate-500">📱 ${escapeHtml(st.phone)} | 🕒 ${escapeHtml(sc.lastCheckInTime)}</p>
+                        </div>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <button onclick="recordAutoAttendance('${st.id}')" class="btn-kid bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-extrabold">
+                          ⏱️ تسجيل حضور الآن بساعة الهاتف
+                        </button>
+                        <button onclick="markStudentAbsent('${st.id}')" class="btn-kid bg-rose-100 hover:bg-rose-200 text-rose-800 px-3 py-2 rounded-xl text-xs font-extrabold">
+                          غائب
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
+                      <div>
+                        <label class="block font-bold text-slate-600 mb-1">الحضور (20) ${isAdmin() ? '👑' : '🔒'}</label>
+                        <input
+                          type="number"
+                          step="0.25"
+                          min="0"
+                          max="20"
+                          value="${sc.attendancePts}"
+                          ${isAdmin() ? '' : 'disabled'}
+                          onchange="updateStudentEvalField('${st.id}', 'attendancePts', this.value)"
+                          class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-black disabled:bg-slate-100"
+                        />
+                      </div>
+                      <div>
+                        <label class="block font-bold text-slate-600 mb-1">الكتاب المقدس (15)</label>
+                        <select onchange="updateStudentEvalField('${st.id}', 'biblePts', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-black">
+                          <option value="15" ${sc.biblePts === 15 ? 'selected' : ''}>نعم (15)</option>
+                          <option value="0" ${sc.biblePts === 0 ? 'selected' : ''}>لا (0)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="block font-bold text-slate-600 mb-1">حفظ الآية (0-10)</label>
+                        <input type="number" min="0" max="10" value="${sc.versePts}" onchange="updateStudentEvalField('${st.id}', 'versePts', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-black" />
+                      </div>
+                      <div>
+                        <label class="block font-bold text-slate-600 mb-1">الهدوء والالتزام (0-5)</label>
+                        <input type="number" min="0" max="5" value="${sc.conductPts}" onchange="updateStudentEvalField('${st.id}', 'conductPts', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-black" />
+                      </div>
+                      <div class="bg-blue-900 text-white rounded-xl p-2 flex flex-col items-center justify-center">
+                        <span class="text-[10px] text-blue-200">الإجمالي (من 45)</span>
+                        <span class="text-lg font-black">${sc.evalTotal}</span>
+                      </div>
+                    </div>
+                  </div>
+                `;
+                })
+                .join('')}
+            </div>
+          </div>
+
+          <!-- قائمة الغائبين الأسبوعية وأرقام تليفوناتهم (تتحدث أسبوعياً الخميس 9:00 م) -->
+          <div class="bg-white rounded-3xl p-5 border-2 border-rose-200 shadow-card space-y-3">
+            <h3 class="text-base font-black text-rose-900 flex items-center gap-2">
+              <span>📋</span>
+              <span>قائمة الغائبين وأرقام تليفوناتهم — ${escapeHtml(cls)} (${absents.length})</span>
+            </h3>
+            ${
+              absents.length
+                ? `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    ${absents
+                      .map(
+                        (a) => `
+                      <div class="p-3 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-between text-xs font-bold">
+                        <span class="font-black text-slate-900">${escapeHtml(a.fullName)}</span>
+                        <span class="text-rose-800">📱 ${escapeHtml(a.phone)} | ولي الأمر: ${escapeHtml(a.parentPhone)}</span>
+                      </div>
+                    `
+                      )
+                      .join('')}
+                  </div>`
+                : `<p class="text-xs font-bold text-emerald-700">🎉 لا يوجد غائبون هذا الأسبوع في ${escapeHtml(cls)}!</p>`
+            }
+          </div>
+        </div>
+      `;
+    }
+
+    function recordAutoAttendance(studentId) {
+      const sc = getStudentScore(studentId);
+      const now = new Date();
+      // حساب التأخير عن الساعة 7:00 مساءً (19:00)
+      const startMinutes = 19 * 60;
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      let delay = 0;
+      if (currentMinutes > startMinutes && currentMinutes <= 20 * 60 + 30) {
+        delay = currentMinutes - startMinutes;
+      }
+      const attScore = Math.max(0, Number((20 - delay * 0.25).toFixed(2)));
+      sc.attendancePts = attScore;
+      sc.absentThisWeek = false;
+      sc.lastCheckInTime = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+      recalcEvalTotal(sc);
+      saveState();
+      showToast(`تم تسجيل الحضور الساعة ${sc.lastCheckInTime} بدرجة ${attScore} من 20 ✅`, '⏱️');
+      render();
+    }
+
+    function markStudentAbsent(studentId) {
+      const sc = getStudentScore(studentId);
+      sc.attendancePts = 0;
+      sc.biblePts = 0;
+      sc.versePts = 0;
+      sc.conductPts = 0;
+      sc.evalTotal = 0;
+      sc.absentThisWeek = true;
+      sc.lastCheckInTime = 'غائب';
+      saveState();
+      showToast('تم تسجيل المخدوم في قائمة الغياب الأسبوعية', '📋');
+      render();
+    }
+
+    function updateStudentEvalField(studentId, field, value) {
+      if (field === 'attendancePts' && !isAdmin()) return;
+      const sc = getStudentScore(studentId);
+      sc[field] = Number(value) || 0;
+      sc.absentThisWeek = false;
+      recalcEvalTotal(sc);
+      saveState();
+      render();
+    }
+
+    function recalcEvalTotal(sc) {
+      const raw = Number(sc.attendancePts) + Number(sc.biblePts) + Number(sc.versePts) + Number(sc.conductPts);
+      sc.evalTotal = Math.min(45, Number(raw.toFixed(2)));
+    }
+
+    // =========================================================================
+    // 9. قسم القراءات اليومية المسموعة والتسجيل الصوتي وحساب البونات (الخميس للأربعاء)
+    // =========================================================================
+    function renderReadingsTab(cls) {
+      const { cfg, verses } = getTodayVersesForClass(cls);
+      const students = getClassStudents(cls);
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const todaySubs = appState.dailyReadingSubmissions.filter((r) => r.className === cls && r.dateKey === todayKey && r.status !== 'rejected');
+      const nonReadersThisWeek = students.filter((s) => getStudentScore(s.id).readingWeekDays === 0);
+      const totalClassBonatRequired = students.reduce((acc, s) => {
+        const sc = getStudentScore(s.id);
+        return acc + (sc.bonatDeliveredFlag ? 0 : sc.bonatWeekEarned);
+      }, 0);
+
+      const myTodaySub = isStudent()
+        ? appState.dailyReadingSubmissions.find((r) => r.studentId === appState.currentUser.id && r.dateKey === todayKey)
+        : null;
+
+      return `
+        <div class="space-y-6">
+          <!-- عداد القراءات اليومي للفصل -->
+          <div class="bg-gradient-to-l from-emerald-600 to-teal-500 text-white rounded-3xl p-5 shadow-card flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 class="text-lg sm:text-xl font-black">📖 القراءات اليومية للكتاب المقدس — ${escapeHtml(cls)}</h2>
+              <p class="text-xs font-bold text-emerald-50">تتحدث الآيات يومياً الساعة 12:01 ص • دورة البونات من الخميس إلى الأربعاء</p>
+            </div>
+            <div class="bg-white/20 px-4 py-2.5 rounded-2xl text-center">
+              <p class="text-[11px] font-bold">عداد قراءات اليوم</p>
+              <p class="text-xl font-black">${todaySubs.length} / ${students.length}</p>
+            </div>
+          </div>
+
+          <!-- إعداد القراءة اليومية (للخادم والأدمن) -->
+          ${
+            !isStudent()
+              ? `
+            <form onsubmit="saveReadingConfig(event, '${cls}')" class="bg-white rounded-3xl p-5 border-2 border-emerald-100 shadow-card space-y-3">
+              <h3 class="text-sm font-black text-emerald-950">⚙️ تحديد سفر وأصحاح وعدد الآيات اليومية لـ ${escapeHtml(cls)}</h3>
+              <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <select id="rc-book" class="px-3.5 py-2.5 rounded-2xl border border-slate-300 text-sm font-bold bg-white">
+                  ${Object.keys(BIBLE_CHAPTERS)
+                    .map((b) => `<option value="${b}" ${cfg.book === b ? 'selected' : ''}>${b}</option>`)
+                    .join('')}
+                </select>
+                <input id="rc-chapter" type="number" min="1" value="${cfg.chapter}" placeholder="رقم الأصحاح" class="px-3.5 py-2.5 rounded-2xl border border-slate-300 text-sm font-bold" />
+                <input id="rc-verses" type="number" min="1" max="10" value="${cfg.versesPerDay}" placeholder="عدد الآيات يومياً" class="px-3.5 py-2.5 rounded-2xl border border-slate-300 text-sm font-bold" />
+                <button type="submit" class="btn-kid bg-emerald-600 hover:bg-emerald-700 text-white font-black py-2.5 rounded-2xl text-sm">حفظ وتحديث</button>
+              </div>
+            </form>
+          `
+              : ''
+          }
+
+          <!-- النص الكتابي المكتوب + القراءة اليومية المسموعة -->
+          <div class="bg-white rounded-3xl p-5 sm:p-6 border-2 border-amber-200 shadow-card space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h3 class="text-base sm:text-lg font-black text-amber-950">📜 آيات اليوم: ${escapeHtml(cfg.book)} (أصحاح ${cfg.chapter})</h3>
+              <span class="text-xs font-extrabold bg-amber-100 text-amber-900 px-3 py-1 rounded-full">1 نقطة لكل يوم قراءة وتسجيل</span>
+            </div>
+
+            <div class="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 space-y-2">
+              ${verses
+                .map(
+                  (v, idx) => `
+                <p data-verse-idx="${idx}" class="p-2.5 rounded-xl border border-transparent transition-all text-base font-extrabold text-slate-900 leading-loose">
+                  ${escapeHtml(v)}
+                </p>
+              `
+                )
+                .join('')}
+            </div>
+
+            <!-- مشغل القراءة اليومية المسموعة المزدوج -->
+            <div class="bg-gradient-to-l from-blue-50 to-sky-50 border-2 border-blue-200 p-4 rounded-2xl space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p class="text-xs sm:text-sm font-black text-blue-950">🎧 القراءة اليومية المسموعة (تعمل على جميع الهواتف والمتصفحات)</p>
+                  <p id="daily-audio-status" class="text-xs font-bold text-blue-700 mt-0.5">${escapeHtml(appState.audioPlayerState.statusMessage)}</p>
+                </div>
+                <span id="daily-audio-timer" class="font-mono text-xs font-black bg-white px-3 py-1.5 rounded-xl border border-blue-200 text-blue-900">00:00</span>
+              </div>
+
+              <div class="w-full h-2.5 bg-blue-100 rounded-full overflow-hidden">
+                <div id="daily-audio-progress" class="h-full bg-gradient-to-l from-blue-600 to-emerald-500 transition-all duration-300" style="width: ${appState.audioPlayerState.progressPercent}%"></div>
+              </div>
+
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex flex-wrap items-center gap-2">
+                  <button type="button" onclick="startDailyReadingAudio('${cls}')" class="btn-kid bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-extrabold shadow">
+                    ▶ تشغيل القراءة
+                  </button>
+                  <button type="button" onclick="pauseOrResumeDailyReadingAudio('${cls}')" class="btn-kid bg-amber-500 hover:bg-amber-600 text-white px-3.5 py-2 rounded-xl text-xs font-extrabold">
+                    ⏸️ إيقاف مؤقت
+                  </button>
+                  <button type="button" onclick="stopDailyReadingAudio()" class="btn-kid bg-slate-200 hover:bg-slate-300 text-slate-800 px-3.5 py-2 rounded-xl text-xs font-extrabold">
+                    ⏹️ إيقاف
+                  </button>
+                </div>
+
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[11px] font-extrabold text-slate-600">السرعة:</span>
+                  ${[0.8, 1.0, 1.2]
+                    .map(
+                      (r) => `
+                    <button type="button" onclick="setDailyReadingRate(${r}, '${cls}')" class="px-2.5 py-1 rounded-lg text-xs font-extrabold ${
+                      appState.audioPlayerState.rate === r ? 'bg-blue-600 text-white' : 'bg-white text-slate-700 border border-slate-200'
+                    }">${r}x</button>
+                  `
+                    )
+                    .join('')}
+                </div>
+              </div>
+
+              ${
+                cfg.audioFileUrl
+                  ? `
+                <div class="bg-white p-3 rounded-xl border border-blue-200 space-y-1.5">
+                  <p class="text-xs font-extrabold text-emerald-800">🎵 تسجيل صوتي مرفوع للفصل: ${escapeHtml(cfg.audioFileName || 'تسجيل القراءة')}</p>
+                  <audio id="class-uploaded-audio" controls src="${cfg.audioFileUrl}" class="w-full h-9"></audio>
+                </div>
+              `
+                  : `<audio id="class-uploaded-audio" class="hidden"></audio>`
+              }
+
+              ${
+                !isStudent()
+                  ? `
+                <div class="pt-1 border-t border-blue-200/70 flex flex-wrap items-center justify-between gap-2">
+                  <label class="btn-kid cursor-pointer bg-white hover:bg-blue-100 text-blue-900 border border-blue-300 px-3.5 py-2 rounded-xl text-xs font-extrabold">
+                    <span>🎙️ رفع ملف صوتي للقراءة (MP3 / WAV)</span>
+                    <input type="file" accept="audio/*" class="hidden" onchange="handleUploadClassReadingAudio(this, '${cls}')" />
+                  </label>
+                </div>
+              `
+                  : ''
+              }
+            </div>
+
+            <!-- خانة التسجيل الصوتي للمخدوم (مرة واحدة يومياً إلا في حالة الرفض) -->
+            ${
+              isStudent()
+                ? `
+              <div class="p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-200 space-y-2.5">
+                <h4 class="text-sm font-black text-emerald-950">🎤 التسجيل الصوتي لتلاوة الآيات اليومية</h4>
+                ${
+                  myTodaySub && myTodaySub.status !== 'rejected'
+                    ? `<div class="p-3 rounded-xl bg-white border border-emerald-300 text-xs font-extrabold text-emerald-800">
+                        ✅ أحسنت يا بطل! تم تسجيل وإرسال قراءتك اليوم (${escapeHtml(myTodaySub.submittedAt)}) واحتُسبت لك نقطة اليوم. لا يمكن الإرسال مرة أخرى اليوم إلا في حالة طلب الخادم إعادة التسجيل.
+                      </div>`
+                    : `
+                      ${
+                        myTodaySub && myTodaySub.status === 'rejected'
+                          ? `<div class="p-3 rounded-xl bg-rose-100 border border-rose-300 text-xs font-extrabold text-rose-900">
+                              ⚠️ رسالة من خادم الفصل: تم رفض قراءة اليوم (${escapeHtml(myTodaySub.rejectReason || 'يرجى إعادة التلاوة بوضوح')}). سجل قراءة بديلة الآن!
+                            </div>`
+                          : ''
+                      }
+                      <div class="flex flex-wrap items-center gap-2.5">
+                        <button type="button" id="btn-start-rec" onclick="startStudentVoiceRecording()" class="btn-kid bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 rounded-2xl text-xs font-extrabold">
+                          🔴 بدء تسجيل صوتي بالميكروفون
+                        </button>
+                        <button type="button" id="btn-stop-rec" onclick="stopAndSubmitStudentVoiceRecording()" class="hidden btn-kid bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-2xl text-xs font-extrabold">
+                          ⏹️ إيقاف وإرسال القراءة
+                        </button>
+                        <button type="button" onclick="submitQuickSimulatedReading()" class="btn-kid bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2.5 rounded-2xl text-xs font-extrabold">
+                          📤 تأكيد وإرسال القراءة اليومية (+1 نقطة)
+                        </button>
+                      </div>
+                    `
+                }
+              </div>
+            `
+                : ''
+            }
+          </div>
+
+          <!-- مراجعة الخادم والأدمن لتسجيلات المخدومين + قائمة البونات الأسبوعية + غير القارئين -->
+          ${
+            !isStudent()
+              ? `
+            <div class="bg-white rounded-3xl p-5 border-2 border-blue-100 shadow-card space-y-4">
+              <h3 class="text-base font-black text-blue-950">🎧 تسجيلات مخدومي ${escapeHtml(cls)} للقراءات اليومية</h3>
+              <div class="space-y-2.5">
+                ${
+                  appState.dailyReadingSubmissions.filter((r) => r.className === cls).length
+                    ? appState.dailyReadingSubmissions
+                        .filter((r) => r.className === cls)
+                        .map(
+                          (sub) => `
+                      <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div>
+                          <p class="font-black text-slate-900">${escapeHtml(sub.studentName)} <span class="text-slate-400">(${escapeHtml(sub.submittedAt)})</span></p>
+                          <p class="font-bold ${sub.status === 'rejected' ? 'text-rose-700' : 'text-emerald-700'}">الحالة: ${sub.status === 'rejected' ? 'مرفوضة: ' + escapeHtml(sub.rejectReason) : 'مقبولة / مسجلة'}</p>
+                          ${sub.audioUrl ? `<audio controls src="${sub.audioUrl}" class="mt-2 h-8"></audio>` : ''}
+                        </div>
+                        ${
+                          sub.status !== 'rejected'
+                            ? `<button onclick="rejectStudentReading('${sub.id}')" class="btn-kid bg-rose-100 hover:bg-rose-200 text-rose-800 px-3 py-2 rounded-xl font-extrabold">❌ رفض القراءة وإرسال رسالة</button>`
+                            : ''
+                        }
+                      </div>
+                    `
+                        )
+                        .join('')
+                    : `<p class="text-xs font-bold text-slate-500">لا توجد تسجيلات صوتية مرسلة اليوم بعد.</p>`
+                }
+              </div>
+            </div>
+
+            <!-- قائمة نهاية الأسبوع (الخميس إلى الأربعاء) وحساب البونات -->
+            <div class="bg-white rounded-3xl p-5 border-2 border-amber-200 shadow-card space-y-4">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h3 class="text-base font-black text-amber-950">🎟️ قائمة البونات الأسبوعية (الخميس → الأربعاء) — ${escapeHtml(cls)}</h3>
+                <span class="bg-amber-500 text-white px-3.5 py-1.5 rounded-2xl text-xs font-black">إجمالي البونات المطلوبة للفصل: ${totalClassBonatRequired} بون</span>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-right text-xs">
+                  <thead>
+                    <tr class="bg-amber-50 text-amber-950 font-black">
+                      <th class="p-2.5 rounded-r-xl">اسم المخدوم</th>
+                      <th class="p-2.5">أيام القراءة (تراكمي)</th>
+                      <th class="p-2.5">درجات الأسبوع / التراكمي</th>
+                      <th class="p-2.5">بونات الأسبوع</th>
+                      <th class="p-2.5">البونات التراكمي</th>
+                      <th class="p-2.5 rounded-l-xl">تسليم البونات</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100 font-bold">
+                    ${students
+                      .map((st) => {
+                        const sc = getStudentScore(st.id);
+                        return `
+                        <tr>
+                          <td class="p-2.5 font-black text-slate-900">${escapeHtml(st.fullName)}</td>
+                          <td class="p-2.5">${sc.readingCumulativeDays} يوم</td>
+                          <td class="p-2.5">${sc.readingWeekPts} / ${sc.readingCumulativePts}</td>
+                          <td class="p-2.5 text-amber-700 font-black">${sc.bonatDeliveredFlag ? 0 : sc.bonatWeekEarned}</td>
+                          <td class="p-2.5 text-blue-800 font-black">${sc.bonatCumulativeAvailable}</td>
+                          <td class="p-2.5">
+                            <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                              <input type="checkbox" ${sc.bonatDeliveredFlag ? 'checked' : ''} onchange="toggleBonatDelivered('${st.id}', this.checked)" class="w-4 h-4 accent-emerald-600" />
+                              <span>${sc.bonatDeliveredFlag ? 'تم التسليم' : 'تأكيد التسليم'}</span>
+                            </label>
+                          </td>
+                        </tr>
+                      `;
+                      })
+                      .join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- قائمة المخدومين الذين لم يقرأوا إطلاقاً طوال الأسبوع -->
+            <div class="bg-white rounded-3xl p-5 border-2 border-rose-200 shadow-card space-y-2.5">
+              <h4 class="text-sm font-black text-rose-900">📵 مخدومون لم يقوموا بالقراءة اليومية إطلاقاً هذا الأسبوع (${nonReadersThisWeek.length})</h4>
+              ${
+                nonReadersThisWeek.length
+                  ? nonReadersThisWeek
+                      .map(
+                        (s) => `
+                    <div class="p-2.5 rounded-xl bg-rose-50 text-xs font-bold flex justify-between">
+                      <span class="font-black">${escapeHtml(s.fullName)}</span>
+                      <span>📱 ${escapeHtml(s.phone)}</span>
+                    </div>
+                  `
+                      )
+                      .join('')
+                  : `<p class="text-xs font-bold text-emerald-700">👏 كل مخدومي الفصل شاركوا في القراءة هذا الأسبوع!</p>`
+              }
+            </div>
+          `
+              : ''
+          }
+        </div>
+      `;
+    }
+
+    function saveReadingConfig(e, cls) {
+      e.preventDefault();
+      const prev = appState.readingConfigs[cls] || {};
+      appState.readingConfigs[cls] = {
+        book: document.getElementById('rc-book').value,
+        chapter: Number(document.getElementById('rc-chapter').value) || 1,
+        versesPerDay: Number(document.getElementById('rc-verses').value) || 1,
+        dayOffset: prev.dayOffset || 0,
+        audioFileUrl: prev.audioFileUrl || '',
+        audioFileName: prev.audioFileName || '',
+      };
+      saveState();
+      showToast(`تم تحديث القراءات اليومية لـ ${cls} بنجاح 📖`, '✅');
+      render();
+    }
+
+    let mediaRecorderInstance = null;
+    let recordedChunks = [];
+
+    function startStudentVoiceRecording() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showToast('المتصفح لا يدعم التسجيل المباشر بالميكروفون، يمكنك استخدام زر التأكيد والإرسال مباشرة.', '🎤');
+        return;
+      }
+      navigator.mediaDevices
+        .getUserMedia({ audio: true })
+        .then((stream) => {
+          recordedChunks = [];
+          mediaRecorderInstance = new MediaRecorder(stream);
+          mediaRecorderInstance.ondataavailable = (e) => {
+            if (e.data.size > 0) recordedChunks.push(e.data);
+          };
+          mediaRecorderInstance.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+            const audioUrl = URL.createObjectURL(blob);
+            finalizeStudentReadingSubmission(audioUrl);
+            stream.getTracks().forEach((t) => t.stop());
+          };
+          mediaRecorderInstance.start();
+          document.getElementById('btn-start-rec')?.classList.add('hidden');
+          document.getElementById('btn-stop-rec')?.classList.remove('hidden');
+          showToast('🎙️ بدأ التسجيل الصوتي... اقرأ الآيات بصوت واضح!', '🔴');
+        })
+        .catch(() => {
+          showToast('تعذر الوصول للميكروفون، تأكد من السماح للمتصفح أو استخدم زر التأكيد.', '⚠️');
+        });
+    }
+
+    function stopAndSubmitStudentVoiceRecording() {
+      if (mediaRecorderInstance && mediaRecorderInstance.state !== 'inactive') {
+        mediaRecorderInstance.stop();
+      }
+    }
+
+    function submitQuickSimulatedReading() {
+      finalizeStudentReadingSubmission('');
+    }
+
+    function finalizeStudentReadingSubmission(audioUrl) {
+      if (!isStudent()) return;
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const existingIdx = appState.dailyReadingSubmissions.findIndex(
+        (r) => r.studentId === appState.currentUser.id && r.dateKey === todayKey
+      );
+      if (existingIdx !== -1 && appState.dailyReadingSubmissions[existingIdx].status !== 'rejected') {
+        showToast('لقد قمت بتسجيل وإرسال قراءة اليوم بالفعل!', '⚠️');
+        return;
+      }
+
+      const sub = {
+        id: 'rec-' + Date.now(),
+        studentId: appState.currentUser.id,
+        studentName: appState.currentUser.fullName,
+        className: appState.currentUser.className,
+        dateKey: todayKey,
+        status: 'submitted',
+        rejectReason: '',
+        audioUrl,
+        submittedAt: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+      };
+
+      if (existingIdx !== -1) {
+        appState.dailyReadingSubmissions[existingIdx] = sub;
+      } else {
+        appState.dailyReadingSubmissions.unshift(sub);
+      }
+
+      const sc = getStudentScore(appState.currentUser.id);
+      sc.readingWeekDays = Math.min(7, sc.readingWeekDays + 1);
+      sc.readingCumulativeDays += 1;
+      sc.readingWeekPts = Math.min(7, sc.readingWeekPts + 1);
+      sc.readingCumulativePts += 1;
+      const newWeekBonat = calculateWeeklyBonat(sc.readingWeekPts);
+      if (newWeekBonat > sc.bonatWeekEarned) {
+        sc.bonatCumulativeAvailable += newWeekBonat - sc.bonatWeekEarned;
+        sc.bonatWeekEarned = newWeekBonat;
+      }
+
+      saveState();
+      showToast('🎉 رائع يا بطل! تم إرسال قراءتك اليومية واحتُسبت لك +1 نقطة وتوقف التذكير لليوم.', '🌟');
+      render();
+    }
+
+    function rejectStudentReading(subId) {
+      const sub = appState.dailyReadingSubmissions.find((r) => r.id === subId);
+      if (!sub) return;
+      sub.status = 'rejected';
+      sub.rejectReason = 'يرجى إعادة تسجيل تلاوة الآيات بصوت أوضح';
+      const sc = getStudentScore(sub.studentId);
+      sc.readingWeekDays = Math.max(0, sc.readingWeekDays - 1);
+      sc.readingCumulativeDays = Math.max(0, sc.readingCumulativeDays - 1);
+      sc.readingWeekPts = Math.max(0, sc.readingWeekPts - 1);
+      sc.readingCumulativePts = Math.max(0, sc.readingCumulativePts - 1);
+      sc.bonatWeekEarned = calculateWeeklyBonat(sc.readingWeekPts);
+      saveState();
+      showToast(`تم رفض القراءة وإرسال إشعار للمخدوم (${sub.studentName}) لإعادة التسجيل`, '📩');
+      render();
+    }
+
+    function toggleBonatDelivered(studentId, checked) {
+      const sc = getStudentScore(studentId);
+      if (checked && !sc.bonatDeliveredFlag) {
+        sc.bonatCumulativeAvailable = Math.max(0, sc.bonatCumulativeAvailable - sc.bonatWeekEarned);
+        sc.bonatDeliveredFlag = true;
+        showToast('تم تأكيد تسليم البونات وخصمها من الرصيد التراكمي دون المساس بعدد القراءات ✅', '🎟️');
+      } else if (!checked && sc.bonatDeliveredFlag) {
+        sc.bonatDeliveredFlag = false;
+        sc.bonatCumulativeAvailable += sc.bonatWeekEarned;
+      }
+      saveState();
+      render();
+    }
+
+    // =========================================================================
+    // محرك القراءة اليومية المسموعة المزدوج (Speech + Web Audio + MP3)
+    // =========================================================================
+    let dailyReadingFallbackInterval = null;
+    let dailyReadingClockInterval = null;
+
+    function speakTextAr(text) {
+      if ('speechSynthesis' in window) {
+        try {
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(text);
+          u.lang = 'ar-EG';
+          window.speechSynthesis.speak(u);
+          return;
+        } catch (e) {}
+      }
+      playGentleSynthChime();
+      showToast(text, '🔊');
+    }
+
+    function playGentleSynthChime(freq = 523.25, duration = 0.22) {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(0.06, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function updateAudioPlayerDOM() {
+      const st = appState.audioPlayerState;
+      const statusEl = document.getElementById('daily-audio-status');
+      const barEl = document.getElementById('daily-audio-progress');
+      const timerEl = document.getElementById('daily-audio-timer');
+      if (statusEl) statusEl.textContent = st.statusMessage;
+      if (barEl) barEl.style.width = `${st.progressPercent}%`;
+      if (timerEl) {
+        const mins = String(Math.floor(st.elapsedSeconds / 60)).padStart(2, '0');
+        const secs = String(st.elapsedSeconds % 60).padStart(2, '0');
+        timerEl.textContent = `${mins}:${secs}`;
+      }
+      document.querySelectorAll('[data-verse-idx]').forEach((el) => {
+        const idx = Number(el.getAttribute('data-verse-idx'));
+        if (idx === st.activeVerseIndex) {
+          el.classList.add('bg-amber-200/90', 'border-amber-500', 'scale-[1.01]', 'shadow-sm');
+        } else {
+          el.classList.remove('bg-amber-200/90', 'border-amber-500', 'scale-[1.01]', 'shadow-sm');
+        }
+      });
+    }
+
+    function stopDailyReadingAudio() {
+      if ('speechSynthesis' in window) {
+        try {
+          window.speechSynthesis.cancel();
+        } catch (e) {}
+      }
+      if (dailyReadingFallbackInterval) {
+        clearInterval(dailyReadingFallbackInterval);
+        dailyReadingFallbackInterval = null;
+      }
+      if (dailyReadingClockInterval) {
+        clearInterval(dailyReadingClockInterval);
+        dailyReadingClockInterval = null;
+      }
+      const mp3El = document.getElementById('class-uploaded-audio');
+      if (mp3El) {
+        mp3El.pause();
+        mp3El.currentTime = 0;
+      }
+      appState.audioPlayerState.isPlaying = false;
+      appState.audioPlayerState.isPaused = false;
+      appState.audioPlayerState.activeVerseIndex = -1;
+      appState.audioPlayerState.progressPercent = 0;
+      appState.audioPlayerState.elapsedSeconds = 0;
+      appState.audioPlayerState.statusMessage = 'تم إيقاف القراءة المسموعة';
+      updateAudioPlayerDOM();
+    }
+
+    function pauseOrResumeDailyReadingAudio(cls) {
+      const st = appState.audioPlayerState;
+      if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+        if (!st.isPaused) {
+          window.speechSynthesis.pause();
+          st.isPaused = true;
+          st.statusMessage = '⏸️ إيقاف مؤقت للقراءة المسموعة';
+        } else {
+          window.speechSynthesis.resume();
+          st.isPaused = false;
+          st.statusMessage = '🔊 جاري استكمال القراءة المسموعة...';
+        }
+        updateAudioPlayerDOM();
+        return;
+      }
+      if (!st.isPlaying) startDailyReadingAudio(cls);
+    }
+
+    function setDailyReadingRate(rate, cls) {
+      appState.audioPlayerState.rate = rate;
+      showToast(`تم ضبط سرعة القراءة على ${rate}x`, '⚡');
+      if (appState.audioPlayerState.isPlaying) {
+        startDailyReadingAudio(cls);
+      } else {
+        render();
+      }
+    }
+
+    function startDailyReadingAudio(cls) {
+      stopDailyReadingAudio();
+      const { verses } = getTodayVersesForClass(cls);
+      const st = appState.audioPlayerState;
+      st.isPlaying = true;
+      st.isPaused = false;
+      st.elapsedSeconds = 0;
+
+      const mp3El = document.getElementById('class-uploaded-audio');
+      if (mp3El && mp3El.getAttribute('src')) {
+        mp3El.playbackRate = st.rate;
+        mp3El.play().catch(() => {});
+        st.statusMessage = '🎧 جاري تشغيل الملف الصوتي المرفوع للقراءة اليومية';
+        updateAudioPlayerDOM();
+        return;
+      }
+
+      dailyReadingClockInterval = setInterval(() => {
+        if (!st.isPaused && st.isPlaying) {
+          st.elapsedSeconds += 1;
+          updateAudioPlayerDOM();
+        }
+      }, 1000);
+
+      const runSynthVisualAudioFallback = () => {
+        let idx = 0;
+        const stepMs = Math.max(1800, Math.round(3200 / st.rate));
+        const advanceVerse = () => {
+          if (idx >= verses.length) {
+            stopDailyReadingAudio();
+            st.statusMessage = '✅ اكتملت القراءة اليومية المسموعة بنجاح';
+            st.progressPercent = 100;
+            updateAudioPlayerDOM();
+            return;
+          }
+          st.activeVerseIndex = idx;
+          st.progressPercent = Math.round(((idx + 1) / verses.length) * 100);
+          st.statusMessage = `🎵 التتبع الصوتي والبصري التلاوتي — آية ${idx + 1} من ${verses.length}`;
+          playGentleSynthChime(523.25 + idx * 65, 0.25);
+          updateAudioPlayerDOM();
+          idx++;
+        };
+        advanceVerse();
+        dailyReadingFallbackInterval = setInterval(() => {
+          if (!st.isPaused) advanceVerse();
+        }, stepMs);
+      };
+
+      if ('speechSynthesis' in window) {
+        let idx = 0;
+        let fallbackTriggered = false;
+        const speakVerse = () => {
+          if (idx >= verses.length) {
+            stopDailyReadingAudio();
+            st.statusMessage = '✅ اكتملت القراءة اليومية المسموعة بنجاح';
+            st.progressPercent = 100;
+            updateAudioPlayerDOM();
+            return;
+          }
+          st.activeVerseIndex = idx;
+          st.progressPercent = Math.round(((idx + 1) / verses.length) * 100);
+          st.statusMessage = `🔊 جاري قراءة الآية ${idx + 1} من ${verses.length}`;
+          updateAudioPlayerDOM();
+
+          const utter = new SpeechSynthesisUtterance(verses[idx]);
+          utter.lang = 'ar-EG';
+          utter.rate = st.rate;
+
+          const guardTimeout = setTimeout(() => {
+            if (!fallbackTriggered && !window.speechSynthesis.speaking) {
+              fallbackTriggered = true;
+              window.speechSynthesis.cancel();
+              runSynthVisualAudioFallback();
+            }
+          }, 1100);
+
+          utter.onstart = () => clearTimeout(guardTimeout);
+          utter.onend = () => {
+            clearTimeout(guardTimeout);
+            if (!fallbackTriggered) {
+              idx++;
+              speakVerse();
+            }
+          };
+          utter.onerror = () => {
+            clearTimeout(guardTimeout);
+            if (!fallbackTriggered) {
+              fallbackTriggered = true;
+              runSynthVisualAudioFallback();
+            }
+          };
+          window.speechSynthesis.speak(utter);
+        };
+        speakVerse();
+      } else {
+        runSynthVisualAudioFallback();
+      }
+    }
+
+    function handleUploadClassReadingAudio(input, cls) {
+      const file = input.files?.[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      appState.readingConfigs[cls].audioFileUrl = url;
+      appState.readingConfigs[cls].audioFileName = file.name;
+      saveState();
+      showToast(`تم رفع الملف الصوتي (${file.name}) للقراءة اليومية`, '🎧');
+      render();
+    }
+
+    // =========================================================================
+    // 10. قسم المسابقة الأسبوعية التلقائية (10 اختيارات + 10 صح/خطأ + 1 ترتيب أحداث = 25)
+    // =========================================================================
+    function generateDefaultQuiz(cls, book, chapter, fromVerse, toVerse) {
+      const mcq = Array.from({ length: 10 }, (_, i) => ({
+        id: `mcq-${i + 1}`,
+        q: `سؤال اختيار ${i + 1} من ${book} أصحاح ${chapter} (آيات ${fromVerse}-${toVerse}): ما هو التعليم الأساسي في هذه الآية؟`,
+        options: ['المحبة والرحمة', 'الاجتهاد في الصلاة', 'طاعة وصايا الرب', 'كل ما سبق'],
+        correctIndex: 3,
+      }));
+      const tf = Array.from({ length: 10 }, (_, i) => ({
+        id: `tf-${i + 1}`,
+        q: `عبارة ${i + 1} من ${book} أصحاح ${chapter}: يدعونا الرب أن نكون نوراً للعالم ونصنع السلام.`,
+        correctBool: true,
+      }));
+      const orderQuestion = {
+        prompt: `رتب الأحداث التالية من ${book} أصحاح ${chapter} ترتيباً صحيحاً (5 درجات):`,
+        items: ['صعد الرب إلى الجبل', 'تقدم إليه تلاميذه', 'فتح فاه وعلمهم بالتطويبات'],
+      };
+      return { book, chapter, fromVerse, toVerse, mcq, tf, orderQuestion };
+    }
+
+    function renderQuizTab(cls) {
+      if (!appState.quizzes[cls]) {
+        appState.quizzes[cls] = generateDefaultQuiz(cls, 'إنجيل متى', 5, 1, 10);
+      }
+      const quiz = appState.quizzes[cls];
+      const students = getClassStudents(cls);
+
+      return `
+        <div class="space-y-6">
+          <div class="bg-gradient-to-l from-purple-700 to-indigo-600 text-white rounded-3xl p-5 shadow-card flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 class="text-lg sm:text-xl font-black">🧩 المسابقة الأسبوعية — ${escapeHtml(cls)}</h2>
+              <p class="text-xs font-bold text-purple-100">10 أسئلة اختيارات (10 درجات) + 10 صح أو خطأ (10 درجات) + 1 ترتيب أحداث (5 درجات) = 25 درجة</p>
+            </div>
+            <span class="bg-white/20 px-4 py-2 rounded-2xl text-xs font-black">${escapeHtml(quiz.book)} • أصحاح ${quiz.chapter} (آية ${quiz.fromVerse} إلى ${quiz.toVerse})</span>
+          </div>
+
+          <!-- توليد وتعديل المسابقة للأدمن والخدام -->
+          ${
+            !isStudent()
+              ? `
+            <form onsubmit="regenerateQuizForClass(event, '${cls}')" class="bg-white rounded-3xl p-5 border-2 border-purple-100 shadow-card space-y-3">
+              <h3 class="text-sm font-black text-purple-950">⚙️ توليد مسابقة أسبوعية تلقائية وتعديلها لـ ${escapeHtml(cls)}</h3>
+              <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                <select id="qz-book" class="px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white">
+                  ${Object.keys(BIBLE_CHAPTERS)
+                    .map((b) => `<option value="${b}" ${quiz.book === b ? 'selected' : ''}>${b}</option>`)
+                    .join('')}
+                </select>
+                <input id="qz-chapter" type="number" min="1" value="${quiz.chapter}" placeholder="الأصحاح" class="px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold" />
+                <input id="qz-from" type="number" min="1" value="${quiz.fromVerse}" placeholder="من آية" class="px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold" />
+                <input id="qz-to" type="number" min="1" value="${quiz.toVerse}" placeholder="إلى آية" class="px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold" />
+                <button type="submit" class="btn-kid bg-purple-600 hover:bg-purple-700 text-white font-black py-2 rounded-xl text-xs">توليد الأسئلة تلقائياً ✨</button>
+              </div>
+            </form>
+
+            <!-- عرض درجات المخدومين في المسابقة (للأدمن والخدام فقط) -->
+            <div class="bg-white rounded-3xl p-5 border border-purple-100 shadow-card space-y-2.5">
+              <h4 class="text-sm font-black text-purple-950">📊 درجات مخدومي ${escapeHtml(cls)} في المسابقة الأسبوعية</h4>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                ${students
+                  .map((s) => {
+                    const sc = getStudentScore(s.id);
+                    return `
+                    <div class="p-3 rounded-2xl bg-purple-50 border border-purple-200 flex items-center justify-between text-xs font-bold">
+                      <span>${escapeHtml(s.fullName)}</span>
+                      <span class="font-black text-purple-900">${sc.quizTotal} / 25</span>
+                    </div>
+                  `;
+                  })
+                  .join('')}
+              </div>
+            </div>
+          `
+              : ''
+          }
+
+          <!-- نموذج حل المسابقة للمخدوم (أو معاينة وتعديل للخادم) -->
+          <form onsubmit="submitQuizAnswers(event, '${cls}')" class="bg-white rounded-3xl p-5 sm:p-6 border-2 border-indigo-100 shadow-card space-y-5">
+            ${
+              isStudent() && appState.quizResults[appState.currentUser.id] !== undefined
+                ? `<div class="p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-emerald-950 font-black text-sm flex items-center justify-between">
+                    <span>🎉 درجتك في المسابقة الأسبوعية (تظهر لك وحدك):</span>
+                    <span class="text-xl text-emerald-700">${appState.quizResults[appState.currentUser.id]} / 25</span>
+                  </div>`
+                : ''
+            }
+
+            <div class="space-y-3">
+              <h3 class="text-base font-black text-blue-950">أولاً: 10 أسئلة اختيار من متعدد (10 درجات)</h3>
+              ${quiz.mcq
+                .map(
+                  (item, idx) => `
+                <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                  ${
+                    !isStudent()
+                      ? `<input type="text" value="${escapeHtml(item.q)}" onchange="appState.quizzes['${cls}'].mcq[${idx}].q=this.value; saveState();" class="w-full p-2 rounded-xl border border-purple-300 bg-white text-xs font-black" />`
+                      : `<p class="text-xs sm:text-sm font-black text-slate-900">${idx + 1}. ${escapeHtml(item.q)}</p>`
+                  }
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    ${item.options
+                      .map(
+                        (opt, oIdx) => `
+                      <label class="flex items-center gap-2 p-2 rounded-xl bg-white border border-slate-200 text-xs font-bold cursor-pointer">
+                        <input type="radio" name="mcq-${idx}" value="${oIdx}" required class="accent-purple-600" />
+                        <span>${escapeHtml(opt)}</span>
+                      </label>
+                    `
+                      )
+                      .join('')}
+                  </div>
+                </div>
+              `
+                )
+                .join('')}
+            </div>
+
+            <div class="space-y-3">
+              <h3 class="text-base font-black text-blue-950">ثانياً: 10 أسئلة ضع علامة صح أو خطأ (10 درجات)</h3>
+              ${quiz.tf
+                .map(
+                  (item, idx) => `
+                <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                  <p class="text-xs sm:text-sm font-bold text-slate-900 flex-1">${idx + 1}. ${escapeHtml(item.q)}</p>
+                  <div class="flex items-center gap-3 text-xs font-extrabold">
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="tf-${idx}" value="true" required class="accent-emerald-600" /> ✔️ صح</label>
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="tf-${idx}" value="false" required class="accent-rose-600" /> ❌ خطأ</label>
+                  </div>
+                </div>
+              `
+                )
+                .join('')}
+            </div>
+
+            <div class="space-y-2.5 p-4 rounded-2xl bg-amber-50 border border-amber-200">
+              <h3 class="text-base font-black text-amber-950">ثالثاً: سؤال ترتيب الأحداث (5 درجات)</h3>
+              <p class="text-xs font-bold text-slate-700">${escapeHtml(quiz.orderQuestion.prompt)}</p>
+              <div class="space-y-2">
+                ${quiz.orderQuestion.items
+                  .map(
+                    (ev, idx) => `
+                  <div class="flex items-center justify-between bg-white p-2.5 rounded-xl border border-amber-200 text-xs font-bold">
+                    <span>${escapeHtml(ev)}</span>
+                    <select name="order-${idx}" class="px-2.5 py-1 rounded-lg border border-slate-300 font-black">
+                      <option value="0" ${idx === 0 ? 'selected' : ''}>الحدث 1</option>
+                      <option value="1" ${idx === 1 ? 'selected' : ''}>الحدث 2</option>
+                      <option value="2" ${idx === 2 ? 'selected' : ''}>الحدث 3</option>
+                    </select>
+                  </div>
+                `
+                  )
+                  .join('')}
+              </div>
+            </div>
+
+            ${
+              isStudent()
+                ? `<button type="submit" class="w-full btn-kid bg-gradient-to-l from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black py-3.5 rounded-2xl shadow-lg text-base">
+                    إرسال الإجابات والتصحيح التلقائي 🏆
+                  </button>`
+                : ''
+            }
+          </form>
+        </div>
+      `;
+    }
+
+    function regenerateQuizForClass(e, cls) {
+      e.preventDefault();
+      const book = document.getElementById('qz-book').value;
+      const chapter = Number(document.getElementById('qz-chapter').value) || 1;
+      const fromVerse = Number(document.getElementById('qz-from').value) || 1;
+      const toVerse = Number(document.getElementById('qz-to').value) || 10;
+      appState.quizzes[cls] = generateDefaultQuiz(cls, book, chapter, fromVerse, toVerse);
+      saveState();
+      showToast(`تم توليد المسابقة الأسبوعية لـ ${cls} (25 درجة) ويمكنك تعديل أي سؤال ✨`, '🧩');
+      render();
+    }
+
+    function submitQuizAnswers(e, cls) {
+      e.preventDefault();
+      if (!isStudent()) return;
+      const quiz = appState.quizzes[cls];
+      let score = 0;
+      quiz.mcq.forEach((item, idx) => {
+        const chosen = document.querySelector(`input[name="mcq-${idx}"]:checked`);
+        if (chosen && Number(chosen.value) === item.correctIndex) score += 1;
+      });
+      quiz.tf.forEach((item, idx) => {
+        const chosen = document.querySelector(`input[name="tf-${idx}"]:checked`);
+        if (chosen && (chosen.value === 'true') === item.correctBool) score += 1;
+      });
+      const o0 = Number(document.querySelector('select[name="order-0"]').value);
+      const o1 = Number(document.querySelector('select[name="order-1"]').value);
+      const o2 = Number(document.querySelector('select[name="order-2"]').value);
+      if (o0 === 0 && o1 === 1 && o2 === 2) score += 5;
+
+      appState.quizResults[appState.currentUser.id] = score;
+      const sc = getStudentScore(appState.currentUser.id);
+      sc.quizTotal = score;
+      saveState();
+      showToast(`🎉 تم تصحيح المسابقة تلقائياً! نتيجتك الخاصة هي ${score} من 25 درجة`, '🏆');
+      render();
+    }
+
+    // =========================================================================
+    // 11. تجميع الدرجات وقوائم الأوائل الأربعة في كل فصل (مع معالجة التساوي بعدل)
+    // =========================================================================
+    function buildRankedListWithTies(students, getMetricFn) {
+      const sorted = [...students]
+        .map((s) => ({ student: s, score: getMetricFn(s) }))
+        .sort((a, b) => b.score - a.score);
+
+      let currentRank = 0;
+      let lastScore = null;
+      return sorted.map((item, idx) => {
+        if (lastScore === null || item.score < lastScore) {
+          currentRank = idx + 1;
+          lastScore = item.score;
+        }
+        const isTied = sorted.filter((x) => x.score === item.score).length > 1;
+        return { ...item, rank: currentRank, isTied };
+      });
+    }
+
+    function renderLeaderboardCard(title, icon, unit, rankedList, accentClass) {
+      const getMedal = (rank) => {
+        if (rank === 1) return '🥇 المركز الأول';
+        if (rank === 2) return '🥈 المركز الثاني';
+        if (rank === 3) return '🥉 المركز الثالث';
+        return `#${rank}`;
+      };
+
+      return `
+        <div class="bg-white rounded-3xl p-5 border-2 ${accentClass} shadow-card space-y-3">
+          <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+            <span>${icon}</span>
+            <span>${escapeHtml(title)}</span>
+          </h3>
+          <div class="space-y-2">
+            ${
+              rankedList.length
+                ? rankedList
+                    .map((row) => {
+                      const isTop3 = row.rank <= 3;
+                      return `
+                    <div class="p-3 rounded-2xl flex items-center justify-between gap-2 text-xs ${
+                      isTop3 ? 'bg-amber-50/90 border border-amber-300 font-black' : 'bg-slate-50 border border-slate-100 font-bold'
+                    }">
+                      <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="px-2.5 py-1 rounded-xl ${isTop3 ? 'bg-amber-400 text-blue-950' : 'bg-slate-200 text-slate-700'} whitespace-nowrap">
+                          ${getMedal(row.rank)} ${row.isTied && isTop3 ? '(مكرر)' : ''}
+                        </span>
+                        <span class="truncate text-slate-900">${escapeHtml(row.student.fullName)}</span>
+                      </div>
+                      <span class="text-sm font-black text-blue-900 whitespace-nowrap">${row.score} ${escapeHtml(unit)}</span>
+                    </div>
+                  `;
+                    })
+                    .join('')
+                : `<p class="text-xs font-bold text-slate-500">لا يوجد مخدومون في هذا الفصل بعد.</p>`
+            }
+          </div>
+        </div>
+      `;
+    }
+
+    function renderLeaderboardsTab(cls) {
+      const students = getClassStudents(cls);
+      const evalRanked = buildRankedListWithTies(students, (s) => getStudentScore(s.id).evalTotal);
+      const quizRanked = buildRankedListWithTies(students, (s) => getStudentScore(s.id).quizTotal);
+      const readingRanked = buildRankedListWithTies(students, (s) => getStudentScore(s.id).readingCumulativePts);
+      const grandRanked = buildRankedListWithTies(students, (s) => {
+        const sc = getStudentScore(s.id);
+        return Number((sc.evalTotal + sc.quizTotal + sc.readingCumulativePts).toFixed(2));
+      });
+
+      return `
+        <div class="space-y-6">
+          <div class="bg-gradient-to-l from-amber-500 to-orange-500 text-white rounded-3xl p-5 shadow-card">
+            <h2 class="text-lg sm:text-xl font-black">🏆 لوحة الشرف والأوائل في ${escapeHtml(cls)}</h2>
+            <p class="text-xs font-bold text-amber-50">تجميع تلقائي وعادل للثلاثة الأوائل في كل عنصر وعلى مستوى المجموع الكلي مع إبراز المراكز المتساوية</p>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            ${renderLeaderboardCard('1. أوائل درجات التقييم الأسبوعي', '⭐', 'درجة', evalRanked, 'border-blue-200')}
+            ${renderLeaderboardCard('2. أوائل درجات المسابقة الأسبوعية', '🧩', 'درجة', quizRanked, 'border-purple-200')}
+            ${renderLeaderboardCard('3. أوائل القراءات اليومية للكتاب المقدس', '📖', 'نقطة', readingRanked, 'border-emerald-200')}
+            ${renderLeaderboardCard('4. المجموع الكلي للثلاثة عناصر معاً', '👑', 'درجة', grandRanked, 'border-amber-300')}
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // 12. محتوى الفصل (PDF - صور - فيديوهات) ودردشة الخدام والأدمن
+    // =========================================================================
+    function renderResourcesTab(cls) {
+      const resources = appState.classResources[cls] || [];
+      const chats = appState.servantChats[cls] || [];
+
+      return `
+        <div class="space-y-6">
+          <div class="bg-white rounded-3xl p-5 sm:p-6 border-2 border-sky-100 shadow-card space-y-4">
+            <h2 class="text-lg font-black text-blue-950">🎒 مكتبة ومحتوى ${escapeHtml(cls)} (ملفات PDF، صور، فيديوهات)</h2>
+
+            ${
+              !isStudent()
+                ? `
+              <form onsubmit="addClassResource(event, '${cls}')" class="bg-sky-50 p-4 rounded-2xl border border-sky-200 grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                <select id="res-type" class="px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-bold">
+                  <option value="pdf">📄 ملف PDF</option>
+                  <option value="image">🖼️ صورة</option>
+                  <option value="video">🎬 لينك / فيديو</option>
+                </select>
+                <input id="res-title" type="text" required placeholder="عنوان الملف أو الصورة أو الفيديو..." class="px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-bold" />
+                <input id="res-url" type="text" required placeholder="الرابط أو اسم الملف..." class="px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-bold" />
+                <button type="submit" class="btn-kid bg-blue-600 hover:bg-blue-700 text-white font-black py-2 rounded-xl text-xs">إضافة للفصل ➕</button>
+              </form>
+            `
+                : ''
+            }
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              ${
+                resources.length
+                  ? resources
+                      .map(
+                        (r) => `
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2">
+                      <div>
+                        <span class="text-xs font-black text-blue-800">${r.type === 'pdf' ? '📄 PDF' : r.type === 'image' ? '🖼️ صورة' : '🎬 فيديو'}</span>
+                        <p class="text-sm font-black text-slate-900 mt-0.5">${escapeHtml(r.title)}</p>
+                        <p class="text-[11px] font-bold text-slate-500">أضافه: ${escapeHtml(r.addedBy)}</p>
+                      </div>
+                      <a href="${escapeHtml(r.url)}" target="_blank" class="btn-kid bg-blue-600 text-white px-3 py-2 rounded-xl text-xs font-extrabold">فتح</a>
+                    </div>
+                  `
+                      )
+                      .join('')
+                  : `<p class="text-xs font-bold text-slate-500">لا توجد ملفات أو صور مضافة في ${escapeHtml(cls)} حالياً.</p>`
+              }
+            </div>
+          </div>
+
+          <!-- دردشة الخدام والأدمن داخل الفصل (تظهر للخدام والأدمن فقط) -->
+          ${
+            !isStudent()
+              ? `
+            <div class="bg-white rounded-3xl p-5 sm:p-6 border-2 border-indigo-100 shadow-card space-y-4">
+              <h3 class="text-base font-black text-indigo-950">💬 غرفة دردشة خدام ${escapeHtml(cls)} والأدمن (خاصة بالخدام والأدمن فقط)</h3>
+              <div class="max-h-72 overflow-y-auto space-y-2.5 p-3 rounded-2xl bg-slate-50 border border-slate-200">
+                ${
+                  chats.length
+                    ? chats
+                        .map(
+                          (m) => `
+                      <div class="p-3 rounded-2xl bg-white border border-slate-200 text-xs space-y-1">
+                        <div class="flex justify-between font-black text-indigo-900">
+                          <span>${escapeHtml(m.sender)} (${escapeHtml(m.role)})</span>
+                          <span class="text-slate-400 font-bold">${escapeHtml(m.time)}</span>
+                        </div>
+                        <p class="font-bold text-slate-800">${escapeHtml(m.text)}</p>
+                      </div>
+                    `
+                        )
+                        .join('')
+                    : `<p class="text-xs font-bold text-slate-500">ابدأ المحادثة مع خدام الفصل والأدمن...</p>`
+                }
+              </div>
+              <form onsubmit="sendServantChatMessage(event, '${cls}')" class="flex flex-wrap gap-2">
+                <input id="chat-msg-input" type="text" required placeholder="اكتب رسالة أو أضف رابط/ملف لخدام الفصل..." class="flex-1 px-3.5 py-2.5 rounded-2xl border border-slate-300 text-xs font-bold outline-none" />
+                <button type="button" onclick="appendStickerToChat('🙏🌟')" class="bg-amber-100 px-3 py-2 rounded-2xl text-sm">🙏🌟</button>
+                <button type="submit" class="btn-kid bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-2xl text-xs font-extrabold">إرسال</button>
+              </form>
+            </div>
+          `
+              : ''
+          }
+        </div>
+      `;
+    }
+
+    function addClassResource(e, cls) {
+      e.preventDefault();
+      if (isStudent()) return;
+      const type = document.getElementById('res-type').value;
+      const title = document.getElementById('res-title').value.trim();
+      const url = document.getElementById('res-url').value.trim();
+      if (!appState.classResources[cls]) appState.classResources[cls] = [];
+      appState.classResources[cls].unshift({
+        id: 'res-' + Date.now(),
+        type,
+        title,
+        url,
+        addedBy: appState.currentUser.fullName,
+      });
+      saveState();
+      showToast('تمت إضافة المحتوى إلى مكتبة الفصل بنجاح ✅', '🎒');
+      render();
+    }
+
+    function appendStickerToChat(sticker) {
+      const inp = document.getElementById('chat-msg-input');
+      if (inp) inp.value = (inp.value + ' ' + sticker).trim();
+    }
+
+    function sendServantChatMessage(e, cls) {
+      e.preventDefault();
+      if (isStudent()) return;
+      const inp = document.getElementById('chat-msg-input');
+      const text = inp.value.trim();
+      if (!text) return;
+      if (!appState.servantChats[cls]) appState.servantChats[cls] = [];
+      appState.servantChats[cls].push({
+        id: 'msg-' + Date.now(),
+        sender: appState.currentUser.fullName,
+        role: isAdmin() ? 'أدمن' : 'خادم',
+        text,
+        time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+      });
+      inp.value = '';
+      saveState();
+      render();
+    }
+
+    // =========================================================================
+    // 13. لوحة الإدارة الشاملة للأدمن فقط (طلبات الانضمام + الحسابات + كلمات السر + Excel)
+    // =========================================================================
+    function renderAdminTab() {
+      if (!isAdmin()) return '';
+
+      return `
+        <div class="space-y-6">
+          <div class="bg-gradient-to-l from-slate-900 to-blue-950 text-white rounded-3xl p-5 sm:p-6 shadow-kid flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 class="text-lg sm:text-xl font-black">👑 لوحة تحكم الأدمن الشاملة</h2>
+              <p class="text-xs font-bold text-blue-200">إدارة طلبات الانضمام، كلمات السر، نقل الفصول، ترقية الأدمن، وتصدير بيانات Excel</p>
+            </div>
+            <button onclick="exportAllStudentsExcelCSV()" class="btn-kid bg-emerald-500 hover:bg-emerald-600 text-white font-black px-4 py-2.5 rounded-2xl text-xs sm:text-sm shadow">
+              📊 استخراج ملف Excel لبيانات المخدومين
+            </button>
+          </div>
+
+          <!-- قائمة البيانات الكاملة لطلبات الانضمام (للأدمن فقط) -->
+          <div class="bg-white rounded-3xl p-5 border-2 border-amber-200 shadow-card space-y-4">
+            <h3 class="text-base font-black text-amber-950">📋 قائمة البيانات الكاملة لطلبات الانضمام (للأدمن فقط)</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-right text-xs">
+                <thead>
+                  <tr class="bg-amber-50 text-amber-950 font-black">
+                    <th class="p-2.5">الصورة</th>
+                    <th class="p-2.5">الاسم ثلاثي</th>
+                    <th class="p-2.5">الدور</th>
+                    <th class="p-2.5">تليفون المخدوم</th>
+                    <th class="p-2.5">تليفون ولي الأمر</th>
+                    <th class="p-2.5">تاريخ الميلاد</th>
+                    <th class="p-2.5">الفصل</th>
+                    <th class="p-2.5">الحالة</th>
+                    <th class="p-2.5">إجراء الأدمن</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 font-bold">
+                  ${
+                    appState.joinRequests.length
+                      ? appState.joinRequests
+                          .map(
+                            (r) => `
+                        <tr>
+                          <td class="p-2"><img src="${r.avatar}" class="w-10 h-10 rounded-full object-cover" alt="صورة" /></td>
+                          <td class="p-2 font-black text-slate-900">${escapeHtml(r.fullName)}</td>
+                          <td class="p-2">${r.role === 'servant' ? '🛡️ خادم' : '🎒 مخدوم'}</td>
+                          <td class="p-2">${escapeHtml(r.phone)}</td>
+                          <td class="p-2">${escapeHtml(r.parentPhone)}</td>
+                          <td class="p-2">${escapeHtml(r.birthDate)}</td>
+                          <td class="p-2">${escapeHtml(r.className)}</td>
+                          <td class="p-2">
+                            <span class="px-2.5 py-1 rounded-full text-[11px] font-black ${
+                              r.status === 'pending'
+                                ? 'bg-amber-100 text-amber-900'
+                                : r.status === 'approved'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-rose-100 text-rose-800'
+                            }">
+                              ${r.status === 'pending' ? 'قيد المراجعة' : r.status === 'approved' ? 'مقبول' : 'مرفوض'}
+                            </span>
+                          </td>
+                          <td class="p-2 flex flex-wrap gap-1.5">
+                            ${
+                              r.status === 'pending'
+                                ? `
+                              <button onclick="approveJoinRequest('${r.id}')" class="bg-emerald-600 text-white px-2.5 py-1.5 rounded-xl font-extrabold">اعتماد ✅</button>
+                              <button onclick="rejectJoinRequest('${r.id}')" class="bg-rose-600 text-white px-2.5 py-1.5 rounded-xl font-extrabold">رفض ❌</button>
+                            `
+                                : ''
+                            }
+                            <button onclick="deleteJoinRequest('${r.id}')" class="bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-xl font-extrabold">حذف</button>
+                          </td>
+                        </tr>
+                      `
+                          )
+                          .join('')
+                      : `<tr><td colspan="9" class="p-4 text-center text-slate-500">لا توجد طلبات انضمام جديدة حالياً.</td></tr>`
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- إضافة تعليمات للخدام في كل الفصول -->
+          <form onsubmit="addAdminInstructionForServants(event)" class="bg-white rounded-3xl p-5 border-2 border-blue-100 shadow-card space-y-3">
+            <h3 class="text-base font-black text-blue-950">📌 إرسال تعليمات من الأدمن للخدام فقط في كل الفصول</h3>
+            <div class="flex gap-2">
+              <input id="admin-inst-input" type="text" required placeholder="اكتب التعليمات لتظهر للخدام فقط في جميع الفصول..." class="flex-1 px-4 py-2.5 rounded-2xl border border-slate-300 text-xs font-bold outline-none" />
+              <button type="submit" class="btn-kid bg-blue-600 text-white px-4 py-2.5 rounded-2xl text-xs font-extrabold">نشر للخدام</button>
+            </div>
+          </form>
+
+          <!-- إدارة جميع الحسابات النشطة (كلمات السر + نقل الفصول + ترقية لأدمن) -->
+          <div class="bg-white rounded-3xl p-5 border-2 border-indigo-100 shadow-card space-y-4">
+            <h3 class="text-base font-black text-indigo-950">👥 إدارة حسابات الخدام والمخدومين والأدمن (كلمات السر ونقل الفصول)</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-right text-xs">
+                <thead>
+                  <tr class="bg-indigo-50 text-indigo-950 font-black">
+                    <th class="p-2.5">الاسم</th>
+                    <th class="p-2.5">الدور</th>
+                    <th class="p-2.5">رقم التليفون</th>
+                    <th class="p-2.5">كلمة السر 🔑</th>
+                    <th class="p-2.5">الفصل (نقل)</th>
+                    <th class="p-2.5">صلاحية الأدمن</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 font-bold">
+                  ${appState.users
+                    .map(
+                      (u) => `
+                    <tr>
+                      <td class="p-2.5 font-black text-slate-900">${escapeHtml(u.fullName)}</td>
+                      <td class="p-2.5">${u.role === 'admin' ? '👑 أدمن' : u.role === 'servant' ? '🛡️ خادم' : '🎒 مخدوم'}</td>
+                      <td class="p-2.5">${escapeHtml(u.phone)}</td>
+                      <td class="p-2.5 font-mono text-rose-700 font-black">${escapeHtml(u.password)}</td>
+                      <td class="p-2.5">
+                        <select onchange="transferUserClass('${u.id}', this.value)" class="px-2.5 py-1 rounded-xl border border-slate-300 bg-white font-bold">
+                          ${CLASSES.map((c) => `<option value="${c}" ${u.className === c ? 'selected' : ''}>${c}</option>`).join('')}
+                        </select>
+                      </td>
+                      <td class="p-2.5">
+                        ${
+                          u.id !== appState.currentUser.id
+                            ? `<button onclick="toggleUserAdminRole('${u.id}')" class="px-2.5 py-1 rounded-xl font-extrabold ${
+                                u.role === 'admin' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-900'
+                              }">
+                                ${u.role === 'admin' ? 'سحب صلاحية الأدمن' : 'ترقية إلى أدمن 👑'}
+                              </button>`
+                            : `<span class="text-slate-400">حسابك الحالي</span>`
+                        }
+                      </td>
+                    </tr>
+                  `
+                    )
+                    .join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function approveJoinRequest(reqId) {
+      const req = appState.joinRequests.find((r) => r.id === reqId);
+      if (!req) return;
+      req.status = 'approved';
+      const newUser = {
+        id: (req.role === 'servant' ? 'srv-' : 'stu-') + Date.now(),
+        role: req.role,
+        fullName: req.fullName,
+        phone: req.phone,
+        parentPhone: req.parentPhone,
+        password: req.password,
+        birthDate: req.birthDate,
+        className: req.className,
+        assignedClasses: req.role === 'servant' ? [req.className] : [],
+        status: 'approved',
+        avatar: req.avatar,
+        quickLoginEnabled: false,
+      };
+      appState.users.push(newUser);
+      if (newUser.role === 'student') getStudentScore(newUser.id);
+      saveState();
+      showToast(`تم اعتماد وقبول (${req.fullName}) وتفعيل حسابه في ${req.className} ✅`, '🎉');
+      render();
+    }
+
+    function rejectJoinRequest(reqId) {
+      const req = appState.joinRequests.find((r) => r.id === reqId);
+      if (!req) return;
+      req.status = 'rejected';
+      saveState();
+      showToast(`تم رفض طلب (${req.fullName})`, '❌');
+      render();
+    }
+
+    function deleteJoinRequest(reqId) {
+      appState.joinRequests = appState.joinRequests.filter((r) => r.id !== reqId);
+      saveState();
+      render();
+    }
+
+    function addAdminInstructionForServants(e) {
+      e.preventDefault();
+      const inp = document.getElementById('admin-inst-input');
+      const text = inp.value.trim();
+      if (!text) return;
+      appState.adminServantInstructions.unshift({
+        id: 'inst-' + Date.now(),
+        text,
+        time: 'الآن',
+      });
+      inp.value = '';
+      saveState();
+      showToast('تم إرسال التعليمات للخدام في كل الفصول بنجاح 📌', '✅');
+      render();
+    }
+
+    function transferUserClass(userId, newClass) {
+      const u = appState.users.find((x) => x.id === userId);
+      if (!u) return;
+      u.className = newClass;
+      if (u.role === 'servant') u.assignedClasses = [newClass];
+      saveState();
+      showToast(`تم نقل (${u.fullName}) إلى ${newClass} بنجاح`, '🏫');
+      render();
+    }
+
+    function toggleUserAdminRole(userId) {
+      const u = appState.users.find((x) => x.id === userId);
+      if (!u) return;
+      if (u.role === 'admin') {
+        u.role = 'servant';
+        u.assignedClasses = [u.className];
+        showToast(`تم تحويل (${u.fullName}) إلى دور خادم`, '🛡️');
+      } else {
+        u.role = 'admin';
+        u.assignedClasses = [...CLASSES];
+        showToast(`تمت ترقية (${u.fullName}) إلى أدمن بصلاحيات كاملة 👑`, '🎉');
+      }
+      saveState();
+      render();
+    }
+
+    function exportAllStudentsExcelCSV() {
+      const students = appState.users.filter((u) => u.role === 'student' && u.status === 'approved');
+      const headers = [
+        'الاسم الثلاثي',
+        'الفصل',
+        'رقم تليفون المخدوم',
+        'رقم تليفون ولي الأمر',
+        'تاريخ الميلاد',
+        'درجة الحضور',
+        'التقييم الأسبوعي (من 45)',
+        'درجة المسابقة',
+        'أيام القراءات التراكمي',
+        'درجات القراءات التراكمي',
+        'البونات المتاحة',
+        'المجموع التراكمي الكلي',
+      ];
+      const rows = students.map((s) => {
+        const sc = getStudentScore(s.id);
+        const total = sc.evalTotal + sc.quizTotal + sc.readingCumulativePts;
+        return [
+          s.fullName,
+          s.className,
+          s.phone,
+          s.parentPhone,
+          s.birthDate,
+          sc.attendancePts,
+          sc.evalTotal,
+          sc.quizTotal,
+          sc.readingCumulativeDays,
+          sc.readingCumulativePts,
+          sc.bonatCumulativeAvailable,
+          total,
+        ];
+      });
+
+      const csvContent =
+        '\uFEFF' +
+        [headers, ...rows]
+          .map((row) => row.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+          .join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'بيانات_مخدومي_مدرسة_الكتاب_المقدس.csv';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      showToast('تم تصدير ملف Excel (CSV) لبيانات المخدومين بنجاح 📊', '✅');
+    }
+
+    // =========================================================================
+    // 14. دالة العرض الرئيسية (Main Render)
+    // =========================================================================
+    function render() {
+      const root = document.getElementById('app');
+      if (!root) return;
+      if (appState.screen === 'cover') {
+        root.innerHTML = renderCoverScreen();
+      } else if (appState.screen === 'auth' || !appState.currentUser) {
+        root.innerHTML = renderAuthScreen();
+      } else {
+        root.innerHTML = renderAppShell();
+      }
+    }
+
+    window.onload = function () {
+      render();
+    };
+  </script>
+</body>
+</html>
